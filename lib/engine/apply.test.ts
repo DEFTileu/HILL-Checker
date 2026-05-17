@@ -166,3 +166,37 @@ describe('getNextActivePlayer', () => {
     expect(getNextActivePlayer(s)).toBe(1);
   });
 });
+
+describe('multi-jump chain', () => {
+  it('keeps the turn and sets mandatoryJumpFrom after the first jump, then clears it and advances after the last', () => {
+    const b = emptyBoard(8);
+    b[5][4] = { player: 1, king: false };
+    b[4][3] = { player: 2, king: false }; // first victim
+    b[2][3] = { player: 2, king: false }; // chain victim
+    b[0][7] = { player: 2, king: false }; // survivor, keeps P2 alive
+    const s0 = baseState(b, 1);
+
+    const s1 = applyMove(s0, {
+      from: { row: 5, col: 4 },
+      to: { row: 3, col: 2 },
+      captures: [{ row: 4, col: 3 }],
+    });
+    // Still player 1's turn; the same piece must keep jumping.
+    expect(s1.currentPlayer).toBe(1);
+    expect(s1.mandatoryJumpFrom).toEqual({ row: 3, col: 2 });
+    expect(s1.board[3][2]?.player).toBe(1);
+    expect(s1.board[4][3]).toBeNull();
+
+    const s2 = applyMove(s1, {
+      from: { row: 3, col: 2 },
+      to: { row: 1, col: 4 },
+      captures: [{ row: 2, col: 3 }],
+    });
+    // No more jumps -> chain ends, turn passes to player 2.
+    expect(s2.mandatoryJumpFrom).toBeNull();
+    expect(s2.currentPlayer).toBe(2);
+    expect(s2.board[1][4]?.player).toBe(1);
+    expect(s2.board[2][3]).toBeNull();
+    expect(s2.board[3][2]).toBeNull();
+  });
+});

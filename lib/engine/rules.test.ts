@@ -77,6 +77,41 @@ describe('mandatory capture', () => {
     b[5][2] = { player: 1, king: false };
     expect(isJumpAvailable(baseState(b), 1)).toBe(false);
   });
+
+  // Acceptance: non-capturing pieces yield no legal moves while another
+  // piece can capture (forced-capture rule), explicit two-piece setup.
+  it('a piece that can only walk has no legal moves when another can jump', () => {
+    const b = emptyBoard(8);
+    b[6][1] = { player: 1, king: false }; // could only step (5,0)/(5,2)
+    b[5][6] = { player: 1, king: false }; // can jump (4,5) -> land (3,4)
+    b[4][5] = { player: 2, king: false };
+    const state = baseState(b);
+    expect(getLegalMoves(state, { row: 6, col: 1 })).toEqual([]);
+    const jump = getLegalMoves(state, { row: 5, col: 6 });
+    expect(jump).toHaveLength(1);
+    expect(jump[0].to).toEqual({ row: 3, col: 4 });
+  });
+});
+
+describe('multi-jump chain', () => {
+  // From the mandatory-jump square the moving piece must keep jumping, and
+  // every available continuation is offered (here: two branches).
+  it('offers all chain continuations when mandatoryJumpFrom is set', () => {
+    const b = emptyBoard(8);
+    b[3][2] = { player: 1, king: false }; // just landed here
+    b[2][1] = { player: 2, king: false }; // -> land (1,0)
+    b[2][3] = { player: 2, king: false }; // -> land (1,4)
+    const state = { ...baseState(b), mandatoryJumpFrom: { row: 3, col: 2 } };
+    const moves = getLegalMoves(state, { row: 3, col: 2 });
+    expect(moves).toHaveLength(2);
+    expect(moves.map((m) => `${m.to.row},${m.to.col}`).sort()).toEqual([
+      '1,0',
+      '1,4',
+    ]);
+    expect(moves.every((m) => m.captures.length === 1)).toBe(true);
+    // No other piece may move mid-chain.
+    expect(getLegalMoves(state, { row: 2, col: 1 })).toEqual([]);
+  });
 });
 
 describe('flying king', () => {
