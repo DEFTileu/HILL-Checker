@@ -28,15 +28,14 @@ import {
 } from '@/lib/multiplayer/channel';
 import {
   assignSlots,
-  boardToPieces,
   toTuple,
   winnersToGameOver,
   type PresenceEntry,
   type SlotMap,
 } from '@/lib/multiplayer/adapt';
 import { Lobby } from '@/components/Lobby';
-import { Board } from '@/components/Board';
-import { GameOverOverlay } from '@/components/GameOverOverlay';
+import { GameView } from '@/components/GameView';
+import { toGameViewModel, type PlayerMeta } from '@/lib/game-ui-view';
 import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
 const PRESET = { 'hill-blitz': hillBlitz, 'hill-survival': hillSurvival } as const;
@@ -380,56 +379,71 @@ export default function RoomPage({
 
   // GAME view
   if (state && room.status === 'playing') {
-    const cfg = state.config;
     const go = winners ? winnersToGameOver(winners, slots) : null;
     const elapsed = Math.max(0, Math.floor((now - startedAtMs) / 1000));
     const dur = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
+
+    const meta: PlayerMeta[] = (Object.keys(slots) as unknown as Player[])
+      .map(Number)
+      .filter((p): p is Player => !!slots[p as Player])
+      .map((p) => ({
+        player: p as Player,
+        name: slots[p as Player]!.displayName,
+        tier: slots[p as Player]!.tier,
+        skin: slots[p as Player]!.skin,
+        isYou: slots[p as Player]!.userId === user?.id,
+      }));
+
+    const vm = toGameViewModel(state, meta);
+    const remaining = state.turnDeadline
+      ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000))
+      : 0;
+
+    const dcBanner = Object.keys(disconnectedAt)
+      .map((k) => Number(k) as Player)
+      .filter((p) => disconnectedAt[p] != null)
+      .map((p) => {
+        const secs = Math.max(
+          0,
+          Math.ceil((disconnectedAt[p]! + 10_000 - now) / 1000),
+        );
+        return (
+          <div
+            key={`dc-${p}`}
+            className="font-mono text-[11px] tracking-[0.16em] text-hill-danger"
+          >
+            P{p} DISCONNECTED · {secs}s…
+          </div>
+        );
+      });
+
     return (
-      <div className="flex min-h-screen flex-col items-center gap-4 bg-hill-bg p-5 text-hill-text">
-        <div className="font-mono text-[11px] tracking-[0.2em] text-hill-muted">
-          ROOM {roomId} · ROUND {state.round}
-          {canMove ? ' · YOUR TURN' : ` · P${state.currentPlayer}`}
-        </div>
-        {Object.keys(disconnectedAt)
-          .map((k) => Number(k) as Player)
-          .filter((p) => disconnectedAt[p] != null)
-          .map((p) => {
-            const secs = Math.max(
-              0,
-              Math.ceil((disconnectedAt[p]! + 10_000 - now) / 1000),
-            );
-            return (
-              <div
-                key={`dc-${p}`}
-                className="font-mono text-[11px] tracking-[0.16em] text-hill-danger"
-              >
-                P{p} DISCONNECTED · {secs}s…
-              </div>
-            );
-          })}
-        <Board
-          size={cfg.boardSize as 8 | 10}
-          pieces={boardToPieces(state.board)}
-          centerZone={cfg.centerZone.map(toTuple)}
-          selected={selected ? toTuple(selected) : null}
-          highlighted={legalMoves.map((m) => toTuple(m.to))}
-          isYourTurn={canMove}
-          onSquareClick={handleSquare}
-        />
-        {go && (
-          <GameOverOverlay
-            kind={go.kind}
-            winners={go.winners}
-            matchDuration={dur}
-            roundCount={state.round}
-            onPlayAgain={() => router.push('/r/new')}
-            onShare={() => {
-              void navigator.clipboard.writeText(window.location.href);
-            }}
-            onLobby={() => router.push('/')}
-          />
-        )}
-      </div>
+      <GameView
+        vm={vm}
+        roomCode={roomId}
+        remaining={remaining}
+        selected={selected ? toTuple(selected) : null}
+        legalTargets={legalMoves.map((m) => toTuple(m.to))}
+        isYourTurn={canMove}
+        onSquareClick={handleSquare}
+        onResign={() => router.push('/')}
+        banner={dcBanner.length ? dcBanner : undefined}
+        gameOver={
+          go
+            ? {
+                kind: go.kind,
+                winners: go.winners,
+                matchDuration: dur,
+                roundCount: state.round,
+                onPlayAgain: () => router.push('/r/new'),
+                onShare: () => {
+                  void navigator.clipboard.writeText(window.location.href);
+                },
+                onLobby: () => router.push('/'),
+              }
+            : null
+        }
+      />
     );
   }
 
