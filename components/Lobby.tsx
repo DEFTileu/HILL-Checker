@@ -150,9 +150,19 @@ export function Lobby({
                         {/* CTA — sticky on mobile, inline on desktop */}
                         <div className="fixed bottom-0 left-0 right-0 px-5 pt-4 pb-3 lg:static lg:px-0 lg:mt-7 lg:flex lg:justify-end lg:pt-0 lg:pb-0"
                              style={{ background: 'linear-gradient(180deg, transparent, #0A0A0A 30%)' }}>
-                            <CTAButton variant="primary" disabled={!ready} onClick={onStart} full={false} className="w-full lg:w-auto lg:px-7">
-                                {ready ? 'Start Game →' : 'Waiting for 2+ players…'}
-                            </CTAButton>
+                            {/* Only the host can start the match (onStart is a
+                                host-only no-op otherwise) — show non-hosts a
+                                status pill instead of a dead button. */}
+                            {isHost ? (
+                                <CTAButton variant="primary" disabled={!ready} onClick={onStart} full={false} className="w-full lg:w-auto lg:px-7">
+                                    {ready ? 'Start Game →' : 'Waiting for 2+ players…'}
+                                </CTAButton>
+                            ) : (
+                                <div className="w-full lg:w-auto lg:px-7 h-12 rounded-[10px] bg-[var(--hill-surface)] border border-[var(--hill-border)] text-[var(--hill-muted)] text-sm font-semibold inline-flex items-center justify-center gap-2">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--hill-accent)] animate-pulse" />
+                                    {ready ? 'Waiting for host to start…' : 'Waiting for 2+ players…'}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
