@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HILL — King of the Board</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: Inter, -apple-system, system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+
+<script type="text/babel">
+function SkinFamilyShowcase() {
+  const skins = ['bronze','silver','gold','master','champion'];
+  return (
+    <div className="hill-root" style={{
+      background:'#0A0A0A', width:'100%', height:'100%',
+      padding: '40px 28px', display:'flex', flexDirection:'column',
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: HILL.accent, letterSpacing: '0.24em' }}>SAME SHAPE</div>
+      <h2 className="hill-display" style={{ fontSize: 36, marginTop: 6, marginBottom: 4, lineHeight: 1 }}>
+        Five finishes.<br/>One ruleset.
+      </h2>
+      <p style={{ fontSize: 13, color: HILL.muted, marginTop: 6, maxWidth: 360 }}>
+        Skin is decoration only — the shape system stays so colorblind players can still tell pieces apart.
+      </p>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginTop: 18 }}>
+        {skins.map(sk => (
+          <div key={sk} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap: 10, flex: 1 }}>
+            <div style={{
+              width: 80, height: 80, borderRadius: 14,
+              background: 'linear-gradient(135deg,#1a1a1a,#0a0a0a)',
+              border: `1px solid ${HILL.border}`,
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              <PieceShape player={1} size={50} skin={sk} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{SKINS[sk].name}</div>
+              <div className="hill-mono" style={{ fontSize: 9, color: SKINS[sk].color, letterSpacing: '0.14em', marginTop: 2 }}>
+                {SKINS[sk].tag}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SkinShapeMatrix() {
+  const skins = ['bronze','silver','gold','master','champion'];
+  const players = [1,2,3,4];
+  return (
+    <div className="hill-root" style={{
+      background:'#0A0A0A', width:'100%', height:'100%',
+      padding: '40px 32px', display:'flex', flexDirection:'column',
+    }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: HILL.accent, letterSpacing: '0.24em' }}>MATRIX</div>
+      <h2 className="hill-display" style={{ fontSize: 32, marginTop: 6, marginBottom: 14, lineHeight: 1 }}>
+        Every shape,<br/>every skin.
+      </h2>
+      <div style={{ display:'grid', gridTemplateColumns: `auto repeat(${skins.length}, 1fr)`, gap: 10, alignItems: 'center' }}>
+        {/* header row */}
+        <div/>
+        {skins.map(sk => (
+          <div key={sk} className="hill-mono" style={{ fontSize: 10, color: SKINS[sk].color, letterSpacing: '0.14em', textAlign: 'center' }}>
+            {SKINS[sk].name.toUpperCase()}
+          </div>
+        ))}
+        {/* rows by player */}
+        {players.map(p => (
+          <React.Fragment key={p}>
+            <div className="hill-mono" style={{ fontSize: 10, color: HILL.muted, letterSpacing: '0.14em', paddingRight: 6, textAlign: 'right' }}>
+              {['CIRCLE','SQUARE','TRIANGLE','HEX'][p-1]}
+            </div>
+            {skins.map(sk => (
+              <div key={sk} style={{
+                aspectRatio: '1', display:'flex', alignItems:'center', justifyContent:'center',
+                background: 'linear-gradient(135deg,#161616,#0a0a0a)',
+                border: `1px solid ${HILL.border}`, borderRadius: 10,
+              }}>
+                <PieceShape player={p} size={44} skin={sk} />
+              </div>
+            ))}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  // Artboard dimensions: a touch wider/taller than the iPhone bezel to give breathing room
+  const ABW = 430;
+  const ABH = 894;
+
+  return (
+    <DesignCanvas>
+      <DCSection id="landing" title="01 · Landing & Discovery"
+        subtitle="First touch — premium-brutalist. One name, one tagline, two paths.">
+        <DCArtboard id="landing" label="A · Landing · signed in" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenLanding signedIn={true}/>
+        </DCArtboard>
+        <DCArtboard id="landing-anon" label="B · Landing · guest" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenLanding signedIn={false}/>
+        </DCArtboard>
+        <DCArtboard id="signin" label="C · Sign in with Google" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenSignIn/>
+        </DCArtboard>
+        <DCArtboard id="profile" label="D · Profile · signed in" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenProfile signedIn={true} userTier="Gold" skin="gold"/>
+        </DCArtboard>
+        <DCArtboard id="profile-master" label="D2 · Profile · Master, Master skin" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenProfile signedIn={true} userTier="Master" skin="master"/>
+        </DCArtboard>
+        <DCArtboard id="profile-anon" label="E · Profile · guest" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenProfile signedIn={false} userTier="Bronze" skin="bronze"/>
+        </DCArtboard>
+        <DCArtboard id="leaderboard" label="F · Leaderboard" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenLeaderboard/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="hill-flow" title="02 · Hill 4P Flow"
+        subtitle="Mode → play style → lobby → board. Mode is locked once the room exists.">
+        <DCArtboard id="mode-blitz" label="A · Mode · Blitz" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenModeSelect selected="blitz"/>
+        </DCArtboard>
+        <DCArtboard id="mode-survival" label="B · Mode · Survival" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenModeSelect selected="survival"/>
+        </DCArtboard>
+        <DCArtboard id="playstyle-multi" label="C · Play style · Multiplayer" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenPlayStyle selected="multi" mode="blitz"/>
+        </DCArtboard>
+        <DCArtboard id="playstyle-hotseat" label="D · Play style · Hot-seat" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenPlayStyle selected="hotseat" mode="survival"/>
+        </DCArtboard>
+        <DCArtboard id="lobby-partial" label="E · Lobby · Blitz, 2 of 4" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenLobby filled="partial" mode="blitz"/>
+        </DCArtboard>
+        <DCArtboard id="lobby-full" label="F · Lobby · Survival, full" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenLobby filled="full" mode="survival"/>
+        </DCArtboard>
+        <DCArtboard id="hill-game" label="G · Hill 4P · in play" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="blitz"/>
+        </DCArtboard>
+        <DCArtboard id="hill-survival" label="H · Hill 4P · Survival, P3 out" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="survival"/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="skins" title="05 · Piece skins"
+        subtitle="Same shape, different finish. Overlay only — the colorblind shape system never changes.">
+        <DCArtboard id="skin-family" label="A · The 5 skins, one shape" width={520} height={420}
+          style={{ background: '#0A0A0A', display:'flex', alignItems:'center', justifyContent:'center', flexDirection:'column' }}>
+          <SkinFamilyShowcase/>
+        </DCArtboard>
+        <DCArtboard id="skin-grid" label="B · All shapes × all skins" width={520} height={520}
+          style={{ background: '#0A0A0A', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <SkinShapeMatrix/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="classic" title="03 · Classic 2P"
+        subtitle="Straight 8×8 checkers. Same visual system, fewer ceremony elements.">
+        <DCArtboard id="classic" label="A · Classic mid-game" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenClassic/>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="overlays" title="04 · End-state overlays"
+        subtitle="Death, victory, joint kings, no-king draw. Layered above the live board.">
+        <DCArtboard id="death" label="A · Death · You died" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="blitz" overlay={<DeathOverlay round={3}/>}/>
+        </DCArtboard>
+        <DCArtboard id="winner-solo" label="B · Game over · Solo winner" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="blitz" overlay={<GameOverOverlay kind="solo"/>}/>
+        </DCArtboard>
+        <DCArtboard id="winner-joint" label="C · Game over · Joint kings" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="blitz" overlay={<GameOverOverlay kind="joint"/>}/>
+        </DCArtboard>
+        <DCArtboard id="winner-none" label="D · Game over · No king today" width={ABW} height={ABH} style={{ background: '#0A0A0A', padding: 18, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <ScreenHillGame mode="survival" overlay={<GameOverOverlay kind="none"/>}/>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
