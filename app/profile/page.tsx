@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { GoogleG } from '@/components/GoogleG';
 import { PieceShape } from '@/components/PieceShape';
 import { SkinCard } from '@/components/SkinCard';
-import { useAuth } from '@/lib/auth';
+import { useAuth, signInToLinkedGoogle } from '@/lib/auth';
 import { TIER_META } from '@/lib/tiers';
 import { getTierProgress, TIER_ELO_THRESHOLDS } from '@/lib/arena';
 import { EloInfoModal } from '@/components/EloInfoModal';
@@ -38,27 +38,21 @@ export default function ProfilePage() {
   const [buying, setBuying] = useState<string | null>(null);
   const [buyErr, setBuyErr] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
-  // The Google OAuth callback redirects back here. If linking the identity
-  // failed server-side (account already linked to another user), Supabase
-  // appends an `error_code` param — detect it on first render. Errors can
-  // land in either the query string or the hash fragment depending on the
-  // OAuth flow, so check both.
-  const [identityConflict, setIdentityConflict] = useState(() => {
-    if (typeof window === 'undefined') return false;
+  // A Google account already linked to another HILL profile only surfaces
+  // AFTER the OAuth round-trip, as ?error_code=identity_already_exists (query
+  // or hash) back on this page. Auto-recover with no UI: strip the param so a
+  // refresh doesn't re-trigger, then sign straight into that existing profile
+  // via plain OAuth (no linkIdentity → can't loop on the same conflict).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
     const search = new URLSearchParams(window.location.search);
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    return (
-      (search.get('error_code') ?? hash.get('error_code')) ===
-      'identity_already_exists'
-    );
-  });
-
-  // Strip the error params so a refresh doesn't re-surface the banner.
-  useEffect(() => {
-    if (identityConflict && typeof window !== 'undefined') {
+    const code = search.get('error_code') ?? hash.get('error_code');
+    if (code === 'identity_already_exists') {
       window.history.replaceState({}, '', '/profile');
+      void signInToLinkedGoogle();
     }
-  }, [identityConflict]);
+  }, []);
 
   if (loading || !profile) {
     return (
@@ -381,47 +375,6 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-5 lg:px-12 pt-6 lg:pt-12 pb-10 lg:pb-16">
-      {identityConflict && (
-        <div
-          className="mb-6 rounded-xl border px-4 lg:px-5 py-4 lg:py-5"
-          style={{ background: 'rgba(255,59,48,0.06)', borderColor: 'rgba(255,59,48,0.3)' }}
-          role="alert"
-        >
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] lg:text-sm font-bold text-[var(--hill-danger)]">
-              Google account already in use
-            </div>
-            <div className="mt-1 text-[12px] lg:text-[13px] text-[var(--hill-muted)] leading-relaxed">
-              This Google account is already linked to another HILL profile.
-              Sign in to switch to that account — your current guest progress
-              will be discarded.
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIdentityConflict(false);
-                  // Sign out the orphaned anonymous session so
-                  // signInWithGoogle takes the plain-OAuth path instead of
-                  // retrying linkIdentity (which would fail the same way).
-                  void logout().then(() => linkGoogle());
-                }}
-                className="h-9 px-4 rounded-lg bg-[var(--hill-text)] text-[var(--hill-bg)] text-[12px] font-bold tracking-[0.02em] transition lg:hover:brightness-95"
-              >
-                Sign in to existing account
-              </button>
-              <button
-                type="button"
-                onClick={() => setIdentityConflict(false)}
-                className="h-9 px-4 rounded-lg bg-transparent border border-[var(--hill-border)] text-[var(--hill-muted)] text-[12px] font-semibold tracking-[0.02em] transition lg:hover:text-[var(--hill-text)]"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mobile header (TopBar would normally go here — TopNav covers desktop) */}
       <div className="lg:hidden text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em] mb-5">PROFILE</div>
 

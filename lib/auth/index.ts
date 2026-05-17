@@ -89,6 +89,24 @@ export async function signInWithGoogle(): Promise<void> {
   if (error) throw error;
 }
 
+// Plain Google OAuth with NO identity-linking attempt. Used to recover from
+// a post-redirect `identity_already_exists`: signs the user straight into the
+// existing Google-linked profile (the orphaned anonymous session is replaced).
+// Deterministic — because it never calls linkIdentity it cannot re-trigger
+// the same conflict, so it can't loop.
+export async function signInToLinkedGoogle(): Promise<void> {
+  const sb = getSupabase();
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/profile`
+      : undefined;
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+  if (error) throw error;
+}
+
 // Sign out of the linked account. The provider immediately re-establishes a
 // fresh anonymous guest session so the app always has a profile.
 export async function signOut(): Promise<void> {
