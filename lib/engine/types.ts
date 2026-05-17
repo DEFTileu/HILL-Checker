@@ -13,6 +13,13 @@ export interface Coord {
 export interface Piece {
   player: Player;
   king: boolean;
+  /**
+   * Stable identity assigned at createInitialState and threaded through every
+   * applyMove (clone/spread preserve it). Lets the UI track a piece across
+   * moves for correct slide animation. Optional so test/preview fixtures that
+   * build raw `{ player, king }` boards still typecheck.
+   */
+  id?: number;
 }
 
 export interface GameConfig {

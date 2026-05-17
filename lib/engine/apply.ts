@@ -24,9 +24,13 @@ export function createInitialState(config: GameConfig): GameState {
   const board: (Piece | null)[][] = Array.from({ length: config.boardSize }, () =>
     Array.from({ length: config.boardSize }, () => null as Piece | null),
   );
+  // Deterministic id assignment (config.players × startingPieces order is
+  // identical on every client built from the same preset, so multiplayer
+  // stays in sync without broadcasting ids).
+  let nextId = 0;
   for (const player of config.players) {
     for (const { row, col } of config.startingPieces[player] ?? []) {
-      board[row][col] = { player, king: false };
+      board[row][col] = { player, king: false, id: nextId++ };
     }
   }
   return {

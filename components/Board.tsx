@@ -110,8 +110,8 @@ export function Board({
         const isOwn = ownPlayer !== undefined && p.player === ownPlayer;
         return (
           <div
-            key={i}
-            className="absolute left-0 top-0 transition-transform duration-150 ease-out"
+            key={p.id ?? `${p.player}-${p.pos[0]}-${p.pos[1]}-${i}`}
+            className="absolute left-0 top-0 transition-transform duration-150 ease-out pointer-events-none"
             style={{
               transform: `translate(${p.pos[1] * cs + (cs - cs * 0.7) / 2}px, ${p.pos[0] * cs + (cs - cs * 0.7) / 2}px)`,
               width: cs * 0.7,

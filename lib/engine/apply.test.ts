@@ -27,8 +27,12 @@ describe('createInitialState', () => {
       s.board.flat().filter((x) => x && x.player === p).length;
     expect(count(1)).toBe(12);
     expect(count(2)).toBe(12);
-    expect(s.board[7][0]).toEqual({ player: 1, king: false });
-    expect(s.board[0][1]).toEqual({ player: 2, king: false });
+    expect(s.board[7][0]).toMatchObject({ player: 1, king: false });
+    expect(s.board[0][1]).toMatchObject({ player: 2, king: false });
+    // Every placed piece gets a unique stable id.
+    const ids = s.board.flat().filter(Boolean).map((x) => x!.id);
+    expect(ids.every((id) => typeof id === 'number')).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
     expect(s.currentPlayer).toBe(1);
     expect(s.round).toBe(1);
   });

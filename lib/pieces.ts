@@ -11,6 +11,8 @@ export interface Piece {
   pos: Coord;
   skin?: SkinId;
   dimmed?: boolean;
+  /** Stable engine identity; React keys on it so moves animate as a slide. */
+  id?: number;
 }
 
 /** Mid-game 10×10 Hill 4P position used for previews + non-interactive demos. */

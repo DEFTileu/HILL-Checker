@@ -14,6 +14,7 @@ import {
   type GameOverOverlayProps,
 } from './GameOverOverlay';
 import type { GameViewModel, GameViewPlayer } from '@/lib/game-ui-view';
+import { HILL } from '@/lib/tokens';
 
 interface Props {
   vm: GameViewModel;
@@ -76,7 +77,7 @@ function SidePanel({
     >
       <div
         className={`absolute top-0 bottom-0 w-[3px] ${alignment === 'right' ? 'right-0' : 'left-0'}`}
-        style={{ background: p.player === 1 ? 'var(--hill-text)' : '#1A1A1A' }}
+        style={{ background: [HILL.p1, HILL.p2, HILL.p3, HILL.p4][p.player - 1] }}
       />
       <div className="flex items-center gap-3.5">
         <div className="w-[60px] h-[60px] rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[var(--hill-border)] flex items-center justify-center">

@@ -9,7 +9,7 @@ export function boardToPieces(board: GameState['board']): UIPiece[] {
     for (let c = 0; c < board[r].length; c++) {
       const cell = board[r][c];
       if (cell) {
-        out.push({ player: cell.player, kind: cell.king ? 'king' : 'pawn', pos: [r, c] });
+        out.push({ player: cell.player, kind: cell.king ? 'king' : 'pawn', pos: [r, c], id: cell.id });
       }
     }
   }
