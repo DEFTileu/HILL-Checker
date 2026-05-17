@@ -13,6 +13,7 @@ create table if not exists profiles (
   total_games  int  not null default 0,
   elo          int  not null default 1000,       -- real Elo rating (K=32)
   skin_id      text not null default 'bronze',  -- bronze|silver|gold|master|champion
+  owned_skins  text[] not null default '{}',    -- premium skins purchased via Stripe (webhook-written)
   is_anonymous boolean not null default true,   -- false once linked (Google)
   created_at   timestamptz not null default now()
 );
@@ -22,6 +23,14 @@ alter table profiles
   add column if not exists is_anonymous boolean not null default true;
 alter table profiles
   add column if not exists elo int not null default 1000;
+-- Premium skins owned via Stripe purchase. Written ONLY by the service-role
+-- webhook (app/api/webhooks/stripe). Users can SELECT their own row but the
+-- profiles_update_self policy below scopes UPDATE to auth.uid() = id with no
+-- column guard — so a malicious client could in theory self-grant. We keep
+-- writes server-side (webhook uses the service client) and never expose an
+-- owned_skins update path from the browser.
+alter table profiles
+  add column if not exists owned_skins text[] not null default '{}';
 
 create table if not exists games (
   id          uuid primary key default gen_random_uuid(),
@@ -54,7 +63,12 @@ create table if not exists rooms (
 -- Public leaderboard view (Phase 5 reads this)
 -- ─────────────────────────────────────────────────────────────────────────────
 
-create or replace view leaderboard as
+-- DROP first (not CREATE OR REPLACE): adding `elo` ahead of `win_rate`
+-- changes an existing column's position, which CREATE OR REPLACE rejects
+-- ("cannot change name of view column"). Nothing depends on this view —
+-- the app reads the profiles table directly — so dropping is safe.
+drop view if exists leaderboard;
+create view leaderboard as
   select id, display_name, total_wins, total_games, skin_id, elo,
          (total_wins::float / nullif(total_games, 0)) as win_rate
   from profiles

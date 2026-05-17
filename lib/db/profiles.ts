@@ -16,6 +16,7 @@ interface ProfileRow {
   total_games: number;
   elo: number;
   skin_id: string;
+  owned_skins: string[] | null;
   is_anonymous: boolean;
   created_at: string;
 }
@@ -40,6 +41,8 @@ function toProfile(row: ProfileRow, authUser: User | null): Profile {
     arenaTier: getArenaTier(row.elo ?? STARTING_ELO),
     selectedSkin: (row.skin_id as SkinId) ?? 'bronze',
     elo: row.elo ?? STARTING_ELO,
+    // Pre-migration rows (no owned_skins column) → empty list.
+    ownedSkins: row.owned_skins ?? [],
   };
 }
 

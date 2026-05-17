@@ -15,6 +15,9 @@ export interface Profile {
   arenaTier: ArenaTier;
   selectedSkin: SkinId;
   elo: number;
+  // Premium skins purchased via Stripe (granted by the webhook). Stored as
+  // raw skin-id strings; the profile UI intersects these with PREMIUM_SKIN_IDS.
+  ownedSkins: string[];
 }
 
 export interface LobbyPlayer {
