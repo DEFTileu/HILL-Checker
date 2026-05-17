@@ -59,13 +59,16 @@ export function PlayerSlot({
         <div
           className={[
             'flex items-center justify-center rounded-full bg-white/[0.03]',
-            compact ? 'w-9 h-9' : 'w-11 h-11',
+            // Lobby (non-compact) uses a larger avatar so premium skin
+            // finishes — gold halo, neon pulse, sparkles — are actually
+            // perceivable; the in-game compact chip stays small.
+            compact ? 'w-9 h-9' : 'w-14 h-14',
             empty ? 'border border-dashed border-[var(--hill-borderHi)]' : 'border border-white/[0.06]',
           ].join(' ')}
         >
           {empty
             ? <span className="text-[var(--hill-dim)] text-lg leading-none">+</span>
-            : <PieceShape player={player} size={compact ? 18 : 22} skin={skin}/>}
+            : <PieceShape player={player} size={compact ? 18 : 38} skin={skin}/>}
         </div>
       )}
 
