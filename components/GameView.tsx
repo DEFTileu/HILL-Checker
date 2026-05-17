@@ -243,7 +243,8 @@ export function GameView({
             </div>
           ) : (
             <div className="hidden lg:block">
-              <SidePanel p={vm.players[0]} alignment="right" hideYou={hideYou} />
+              {/* Left of the board → stripe on the OUTER (left) edge. */}
+              <SidePanel p={vm.players[0]} alignment="left" hideYou={hideYou} />
             </div>
           )}
 
@@ -274,7 +275,8 @@ export function GameView({
             </div>
           ) : (
             <div className="hidden lg:block">
-              <SidePanel p={vm.players[1]} alignment="left" hideYou={hideYou} />
+              {/* Right of the board → stripe on the OUTER (right) edge. */}
+              <SidePanel p={vm.players[1]} alignment="right" hideYou={hideYou} />
             </div>
           )}
         </div>
