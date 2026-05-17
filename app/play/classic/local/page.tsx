@@ -8,19 +8,32 @@ import { getLegalMoves } from '@/lib/engine/rules';
 import { checkWinners } from '@/lib/engine/endgame';
 import type { Coord, GameState } from '@/lib/engine/types';
 import { GameView } from '@/components/GameView';
+import { useAuth } from '@/lib/auth';
 import {
   toGameViewModel,
   winnersToOverlay,
   type PlayerMeta,
 } from '@/lib/game-ui-view';
 
-const META: PlayerMeta[] = [
-  { player: 1, name: 'White', tier: 'Bronze', skin: 'silver', isYou: true },
-  { player: 2, name: 'Black', tier: 'Bronze', skin: 'gold' },
-];
-
 export default function ClassicLocalPage() {
   const router = useRouter();
+  const { profile } = useAuth();
+  // Slot 1 ("you") uses the signed-in player's chosen skin; slot 2 keeps a
+  // distinct default so the two sides stay visually separable on the shared
+  // screen. Falls back to 'silver' before the profile loads.
+  const meta = useMemo<PlayerMeta[]>(
+    () => [
+      {
+        player: 1,
+        name: 'White',
+        tier: 'Bronze',
+        skin: profile?.selectedSkin ?? 'silver',
+        isYou: true,
+      },
+      { player: 2, name: 'Black', tier: 'Bronze', skin: 'gold' },
+    ],
+    [profile?.selectedSkin],
+  );
   const [state, setState] = useState<GameState>(() =>
     createInitialState(classic2P),
   );
@@ -83,14 +96,14 @@ export default function ClassicLocalPage() {
     setNow(Date.now());
   };
 
-  const vm = toGameViewModel(state, META);
+  const vm = toGameViewModel(state, meta);
   const remaining = state.turnDeadline
     ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000))
     : 0;
   // eslint-disable-next-line react-hooks/refs
   const elapsed = Math.max(0, Math.floor((now - startedAt.current) / 1000));
   const dur = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
-  const ov = winners ? winnersToOverlay(winners, META) : null;
+  const ov = winners ? winnersToOverlay(winners, meta) : null;
 
   return (
     <GameView

@@ -24,6 +24,21 @@ describe('toGameViewModel', () => {
     expect(vm.players.find((p) => p.player === 2)!.isActive).toBe(false);
   });
 
+  it('stamps each board piece with its player\'s skin from meta', () => {
+    // RC1 regression: the board renders piece.skin first; if the view model
+    // does not join meta-skin onto pieces, every in-game piece falls back to
+    // 'bronze' regardless of the player's chosen/assigned skin.
+    const skinned: PlayerMeta[] = [
+      { player: 1, name: 'White', tier: 'Bronze', skin: 'silver', isYou: true },
+      { player: 2, name: 'Black', tier: 'Bronze', skin: 'gold' },
+    ];
+    const vm = toGameViewModel(createInitialState(classic2P), skinned);
+    expect(vm.pieces.length).toBeGreaterThan(0);
+    for (const pc of vm.pieces) {
+      expect(pc.skin).toBe(pc.player === 1 ? 'silver' : 'gold');
+    }
+  });
+
   it('derives alive from board pieces and suppresses isActive when winners is set', () => {
     const base = createInitialState(classic2P);
     const dead = {

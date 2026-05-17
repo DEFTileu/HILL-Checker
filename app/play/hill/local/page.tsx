@@ -8,24 +8,31 @@ import { getLegalMoves } from '@/lib/engine/rules';
 import { checkWinners } from '@/lib/engine/endgame';
 import type { Coord, GameState } from '@/lib/engine/types';
 import { GameView } from '@/components/GameView';
+import { useAuth } from '@/lib/auth';
 import {
   toGameViewModel,
   winnersToOverlay,
   type PlayerMeta,
 } from '@/lib/game-ui-view';
 
-const META: PlayerMeta[] = [
-  { player: 1, name: 'Player 1', tier: 'Bronze', skin: 'silver' },
-  { player: 2, name: 'Player 2', tier: 'Bronze', skin: 'gold' },
-  { player: 3, name: 'Player 3', tier: 'Bronze', skin: 'bronze' },
-  { player: 4, name: 'Player 4', tier: 'Bronze', skin: 'master' },
-];
-
 function HillLocalInner() {
   const router = useRouter();
   const search = useSearchParams();
   const mode = search.get('mode') === 'survival' ? 'survival' : 'blitz';
 
+  const { profile } = useAuth();
+  // Hot-seat 4P: player 1 is the signed-in "you" seat and uses their chosen
+  // skin; the other three keep distinct defaults so all four sides stay
+  // visually separable. Falls back to 'silver' before the profile loads.
+  const meta = useMemo<PlayerMeta[]>(
+    () => [
+      { player: 1, name: 'Player 1', tier: 'Bronze', skin: profile?.selectedSkin ?? 'silver' },
+      { player: 2, name: 'Player 2', tier: 'Bronze', skin: 'gold' },
+      { player: 3, name: 'Player 3', tier: 'Bronze', skin: 'bronze' },
+      { player: 4, name: 'Player 4', tier: 'Bronze', skin: 'master' },
+    ],
+    [profile?.selectedSkin],
+  );
   const [state, setState] = useState<GameState>(() =>
     createInitialState(mode === 'survival' ? hillSurvival : hillBlitz),
   );
@@ -86,14 +93,14 @@ function HillLocalInner() {
     setNow(Date.now());
   };
 
-  const vm = toGameViewModel(state, META);
+  const vm = toGameViewModel(state, meta);
   const remaining = state.turnDeadline
     ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000))
     : 0;
   // eslint-disable-next-line react-hooks/refs
   const elapsed = Math.max(0, Math.floor((now - startedAt.current) / 1000));
   const dur = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
-  const ov = winners ? winnersToOverlay(winners, META) : null;
+  const ov = winners ? winnersToOverlay(winners, meta) : null;
 
   return (
     <GameView

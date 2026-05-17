@@ -56,9 +56,20 @@ export function toGameViewModel(
     pieceCount: counts.get(m.player) ?? 0,
   }));
 
+  // Join each player's skin (from meta — hot-seat presets or, in
+  // multiplayer, presence-derived profile.selectedSkin) onto its pieces.
+  // boardToPieces is a dumb engine→UI adapter with no meta access, so the
+  // join belongs here. Board reads piece.skin first, so this is what makes
+  // skins actually render in-game (RC1).
+  const skinByPlayer = new Map<Player, SkinId>();
+  for (const m of meta) skinByPlayer.set(m.player, m.skin);
+
   return {
     size: (state.config.boardSize === 10 ? 10 : 8) as 8 | 10,
-    pieces: boardToPieces(state.board),
+    pieces: boardToPieces(state.board).map((pc) => ({
+      ...pc,
+      skin: skinByPlayer.get(pc.player) ?? pc.skin,
+    })),
     centerZone: state.config.centerZone.map(toTuple),
     players,
     currentPlayer: state.currentPlayer,
