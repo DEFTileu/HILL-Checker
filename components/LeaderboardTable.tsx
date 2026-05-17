@@ -52,7 +52,7 @@ export function LeaderboardTable({ rows, totalCount }: Props) {
 
   return (
     <div className="bg-[var(--hill-surface)] border border-[var(--hill-border)] rounded-2xl overflow-hidden">
-      <div className="grid items-center gap-4 px-5 py-3.5 bg-[var(--hill-surface2)] border-b border-[var(--hill-border)] sticky top-16 font-mono text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]"
+      <div className="grid items-center gap-4 px-5 py-3.5 bg-[var(--hill-surface2)] border-b border-[var(--hill-border)] font-mono text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]"
         style={{ gridTemplateColumns: '64px 1fr 140px 90px 90px 100px 100px' }}>
         {COLS.map(col => {
           const sortable = (['rank', 'wins', 'games', 'wr', 'elo'] as const).includes(col.key as SortKey);

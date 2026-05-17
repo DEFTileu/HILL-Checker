@@ -1,6 +1,7 @@
 'use client';
 import { getArenaTier, deriveElo } from '@/lib/arena';
 import type { LeaderboardRow } from '@/components/Leaderboard';
+import type { LeaderboardRowData } from '@/components/LeaderboardRow';
 
 export interface LeaderboardEntry {
   id: string;
@@ -52,23 +53,29 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
       })),
     );
 
-  // Normal case: only players who have actually played a game.
+  // Leaderboard is authorized-only: anonymous guests (is_anonymous = true)
+  // never appear, regardless of games played. is_anonymous flips to false in
+  // ensureProfile() once the account is Google-linked.
+
+  // Normal case: authorized players who have actually played a game.
   const { data, error } = await sb
     .from('profiles')
     .select(select)
+    .eq('is_anonymous', false)
     .gt('total_games', 0)
     .order('total_wins', { ascending: false })
     .limit(100);
   if (error) return [];
   if (data && data.length > 0) return toEntries(data as ProfileRow[]);
 
-  // Fallback (per explicit request): if NOBODY has played yet, don't show an
-  // empty board — list all registered users instead (0 wins / 0 games →
-  // Bronze, 0% win-rate). Once any real game is recorded, the filtered query
-  // above takes over again automatically.
+  // Fallback (per explicit request): if no authorized user has played yet,
+  // don't show an empty board — list all AUTHORIZED users instead (0 wins /
+  // 0 games → Bronze, 0% win-rate). Guests are still excluded. Once any real
+  // game is recorded, the filtered query above takes over automatically.
   const { data: all, error: allErr } = await sb
     .from('profiles')
     .select(select)
+    .eq('is_anonymous', false)
     .order('total_wins', { ascending: false })
     .limit(100);
   if (allErr || !all) return [];
@@ -86,6 +93,27 @@ export function toLeaderboardRows(
     tier: getArenaTier(en.totalWins),
     wins: en.totalWins,
     winRate: en.totalGames
+      ? Math.round((en.totalWins / en.totalGames) * 100)
+      : 0,
+    elo: deriveElo(en.totalWins),
+    isYou: !!currentUserId && en.id === currentUserId,
+  }));
+}
+
+// Pure: maps to the Claude Design table/row shape (carries `games` + `wr`,
+// which the legacy LeaderboardRow shape drops). Entries are already sorted;
+// rank is 1-based input order.
+export function toLeaderboardTableRows(
+  entries: LeaderboardEntry[],
+  currentUserId?: string,
+): LeaderboardRowData[] {
+  return entries.map((en, i) => ({
+    rank: i + 1,
+    name: en.displayName,
+    tier: getArenaTier(en.totalWins),
+    wins: en.totalWins,
+    games: en.totalGames,
+    wr: en.totalGames
       ? Math.round((en.totalWins / en.totalGames) * 100)
       : 0,
     elo: deriveElo(en.totalWins),
