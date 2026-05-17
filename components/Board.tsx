@@ -144,9 +144,16 @@ export function Board({
         return (
           <div
             key={p.id ?? `${p.player}-${p.pos[0]}-${p.pos[1]}-${i}`}
-            className="absolute left-0 top-0 transition-transform duration-150 ease-out pointer-events-none"
+            className="absolute left-0 top-0 pointer-events-none"
             style={{
-              transform: `translate(${pc * cs + (cs - cs * 0.7) / 2}px, ${pr * cs + (cs - cs * 0.7) / 2}px)`,
+              // translate3d promotes the piece to its own GPU layer so moves
+              // composite instead of triggering layout/paint each frame.
+              // Material standard easing for a natural settle.
+              transform: `translate3d(${pc * cs + (cs - cs * 0.7) / 2}px, ${pr * cs + (cs - cs * 0.7) / 2}px, 0)`,
+              transition: 'transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              // Only hint the compositor for pieces the local player can move
+              // this turn — keeps GPU memory from bloating across all pieces.
+              willChange: isOwn && isYourTurn ? 'transform' : undefined,
               width: cs * 0.7,
               height: cs * 0.7,
             }}
