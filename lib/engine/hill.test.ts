@@ -3,7 +3,7 @@ import { hillBlitz, hillSurvival } from './presets';
 import { getLegalMoves, isJumpAvailable } from './rules';
 import { applyMove, createInitialState, skipTurn } from './apply';
 import { checkWinners } from './endgame';
-import type { GameState, Piece, Player } from './types';
+import type { Coord, GameState, Piece, Player } from './types';
 
 function emptyBoard(n: number): (Piece | null)[][] {
   return Array.from({ length: n }, () => Array.from({ length: n }, () => null));
@@ -67,6 +67,61 @@ describe('hill presets', () => {
     expect(s.board.flat().filter(Boolean)).toHaveLength(20);
     expect(s.currentPlayer).toBe(1);
     expect(s.turnDeadline).toBeGreaterThan(Date.now() + 9000);
+  });
+});
+
+describe('hillBlitz corner symmetry (180° rotational)', () => {
+  // EXACT 4-way equidistance is impossible on a 10x10 with a 2x2 hill
+  // under the checkers dark-square rule (r+c odd): every dark square in
+  // the top-left / bottom-right corner sits an ODD Manhattan distance
+  // from the center zone, while every dark square in the top-right /
+  // bottom-left corner is EVEN. So min(P1)/min(P3) are always odd and
+  // min(P2)/min(P4) always even — never equal unless pieces are placed on
+  // (illegal) light squares. The achievable, fair invariant is full 180°
+  // rotational symmetry (P1≡P3, P2≡P4) with the two parity classes only a
+  // single, irreducible tile apart. That is what these tests pin down.
+  const N = hillBlitz.boardSize; // 10
+  const rot180 = ({ row, col }: Coord): Coord => ({
+    row: N - 1 - row,
+    col: N - 1 - col,
+  });
+  const asSet = (cs: Coord[]) => new Set(cs.map((c) => `${c.row},${c.col}`));
+  const distMultiset = (cs: Coord[]) =>
+    cs
+      .map((p) =>
+        Math.min(
+          ...hillBlitz.centerZone.map(
+            (z) => Math.abs(p.row - z.row) + Math.abs(p.col - z.col),
+          ),
+        ),
+      )
+      .sort((a, b) => a - b);
+  const sp = (p: Player) => hillBlitz.startingPieces[p]!;
+
+  it('P3 is the exact 180° rotation of P1, and P4 of P2', () => {
+    expect(asSet(sp(1).map(rot180))).toEqual(asSet(sp(3)));
+    expect(asSet(sp(2).map(rot180))).toEqual(asSet(sp(4)));
+  });
+
+  it('rotationally-paired corners have identical distance multisets', () => {
+    expect(distMultiset(sp(1))).toEqual(distMultiset(sp(3)));
+    expect(distMultiset(sp(2))).toEqual(distMultiset(sp(4)));
+  });
+
+  it('the two parity classes are only the irreducible 1 tile apart', () => {
+    const min = (p: Player) => distMultiset(sp(p))[0];
+    // Not a bug: a 10x10 dark-square board cannot do better than this.
+    expect(Math.abs(min(1) - min(2))).toBe(1);
+    expect(min(1)).toBe(min(3));
+    expect(min(2)).toBe(min(4));
+  });
+
+  it('hillSurvival reuses hillBlitz starting positions (kept in sync)', () => {
+    for (const p of [1, 2, 3, 4] as Player[]) {
+      expect(hillSurvival.startingPieces[p]).toEqual(
+        hillBlitz.startingPieces[p],
+      );
+    }
   });
 });
 

@@ -46,6 +46,18 @@ export const classic2P: GameConfig = {
 // triangle toward the central 2x2 "Hill". Each formation is exactly 5
 // pieces, all on dark squares ((row+col) odd), apex pointing at the
 // center. Hardcoded so the layout is fully deterministic.
+//
+// Symmetry note (do NOT "fix" by nudging pieces onto light squares):
+// the layout is fully 180°-rotationally symmetric — P3 is the exact
+// 180° rotation of P1, and P4 of P2 (see hill.test.ts). Perfect 4-way
+// equidistance to the hill is mathematically impossible here: with a
+// 2x2 center on a 10x10 board, EVERY legal (dark) square in the
+// top-left / bottom-right corner is an ODD Manhattan distance from the
+// center zone, and every dark square in the top-right / bottom-left
+// corner is EVEN. So P1/P3's closest piece is unavoidably 1 tile
+// farther than P2/P4's. That 1-tile parity gap is the theoretical
+// floor, and this layout already sits on it — moving pieces to light
+// squares to "equalize" would break checkers movement entirely.
 const HILL_START = {
   1: [
     { row: 0, col: 1 },
