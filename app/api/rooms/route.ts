@@ -11,7 +11,11 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     if (body?.mode !== undefined && body?.mode !== null) {
-      if (body.mode !== 'hill-blitz' && body.mode !== 'hill-survival') {
+      if (
+        body.mode !== 'hill-blitz' &&
+        body.mode !== 'hill-survival' &&
+        body.mode !== 'classic-2p'
+      ) {
         return Response.json({ error: 'invalid mode' }, { status: 400 });
       }
       mode = body.mode;
