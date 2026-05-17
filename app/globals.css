@@ -6,17 +6,31 @@
  *  mistakenly placed in next.config.ts, so none of them resolved.)
  */
 @theme {
-  --color-hill-bg: #0A0A0A;
-  --color-hill-surface: #141414;
-  --color-hill-surface-2: #1A1A1A;
-  --color-hill-border: #1F1F1F;
-  --color-hill-border-hi: #2A2A2A;
-  --color-hill-text: #FAFAFA;
-  --color-hill-muted: #808080;
-  --color-hill-dim: #525252;
-  --color-hill-accent: #BFFF00;
-  --color-hill-danger: #FF3B30;
+  /*
+   * Tailwind utility colors ALIAS the raw --hill-* vars below. This is what
+   * makes theming work: `bg-hill-bg` compiles to `var(--color-hill-bg)` ->
+   * `var(--hill-bg)`, so re-declaring --hill-* under [data-theme='light']
+   * (or a forced-dark subtree) re-skins every utility automatically.
+   */
+  --color-hill-bg: var(--hill-bg);
+  --color-hill-surface: var(--hill-surface);
+  --color-hill-surface-2: var(--hill-surface2);
+  --color-hill-border: var(--hill-border);
+  --color-hill-border-hi: var(--hill-borderHi);
+  --color-hill-text: var(--hill-text);
+  --color-hill-muted: var(--hill-muted);
+  --color-hill-dim: var(--hill-dim);
+  --color-hill-accent: var(--hill-accent);
+  --color-hill-accent-ink: var(--hill-accentInk);
+  --color-hill-accent-fill: var(--hill-accentFill);
+  --color-hill-accent-tint: var(--hill-accentTint);
+  --color-hill-on-accent: var(--hill-onAccent);
+  --color-hill-danger: var(--hill-danger);
+  --color-hill-danger-tint: var(--hill-dangerTint);
+  --color-hill-nav-bg: var(--hill-navBg);
 
+  /* Player + tier colors are theme-INDEPENDENT (spec §D): pieces always
+     render on the dark board, chrome chips ride a dark puck. Static. */
   --color-hill-p1: #FFFFFF;
   --color-hill-p2: #1A1A1A;
   --color-hill-p3: #FF2D87;
@@ -76,7 +90,17 @@
  * CSS variables must exist at :root (the v4 @theme above only generates
  * `bg-hill-*` utility classes, not these var() names).
  */
-:root {
+/*
+ * THEME SCOPES.
+ *
+ * Dark is the default (matches :root for SSR before the no-flash script
+ * runs). `[data-theme='dark']` repeats the dark values so that a forced-dark
+ * SUBTREE — the board and the cinematic overlays, which the spec says stay
+ * dark in BOTH themes — keeps dark tokens even when <html data-theme='light'>.
+ * Equal-specificity selectors, so [data-theme='light'] is ordered last.
+ */
+:root,
+[data-theme='dark'] {
   --hill-bg: #0A0A0A;
   --hill-surface: #141414;
   --hill-surface2: #1A1A1A;
@@ -85,14 +109,52 @@
   --hill-text: #FAFAFA;
   --hill-muted: #808080;
   --hill-dim: #525252;
-  --hill-accent: #BFFF00;
+  --hill-accent: #BFFF00;          /* dark: lime works as both ink & fill */
+  --hill-accentInk: #BFFF00;       /* text/icon/line role */
+  --hill-accentFill: #BFFF00;      /* filled-surface role (buttons, zones) */
+  --hill-accentTint: rgba(191, 255, 0, 0.12);
   --hill-accentDim: rgba(191, 255, 0, 0.12);
+  --hill-onAccent: #0A0A0A;        /* text/icon on top of an accent fill */
   --hill-danger: #FF3B30;
+  --hill-dangerTint: rgba(255, 59, 48, 0.12);
+  --hill-navBg: rgba(10, 10, 10, 0.85);
   --hill-bronze: #CD7F32;
   --hill-silver: #C0C0C0;
   --hill-gold: #FFD700;
   --hill-master: #9B59B6;
   --hill-champion: #BFFF00;
+  color-scheme: dark;
+}
+
+/*
+ * LIGHT — re-skins CHROME only (spec §00). Board, pieces and the
+ * Death/Winner overlays opt back out via a nested [data-theme='dark'].
+ * Player + tier hexes are intentionally NOT overridden here.
+ */
+[data-theme='light'] {
+  --hill-bg: #F4F1EA;              /* warm bone paper, not #FFFFFF */
+  --hill-surface: #FFFFFF;         /* cards lift above bg */
+  --hill-surface2: #FBF8F1;        /* inset surface (stat tiles, hover) */
+  --hill-border: #E1DCD0;          /* warm gray divider */
+  --hill-borderHi: #CFC8B7;        /* outlined button border, focus ring */
+  --hill-text: #0A0A0A;            /* true near-black, 16.7:1 */
+  --hill-muted: #6B6B6B;           /* body-secondary, 5.2:1 */
+  --hill-dim: #9A9A9A;             /* disabled / decorative */
+  --hill-accent: #4A7A00;          /* generic accent -> deep moss (legible ink) */
+  --hill-accentInk: #4A7A00;       /* deep moss-lime, 7.4:1 */
+  --hill-accentFill: #BFFF00;      /* acid lime — fills ONLY, black text on top */
+  --hill-accentTint: rgba(74, 122, 0, 0.08);
+  --hill-accentDim: rgba(74, 122, 0, 0.08);
+  --hill-onAccent: #0A0A0A;
+  --hill-danger: #C8201A;          /* deeper crimson, 5.6:1 */
+  --hill-dangerTint: #FFE0DC;      /* error field bg */
+  --hill-navBg: rgba(255, 255, 255, 0.82);
+  color-scheme: light;
+}
+
+/* Smooth the chrome re-skin; board/overlay subtrees opt out below. */
+[data-theme] body {
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Scrollbar hide utility for horizontal skin-card row */
