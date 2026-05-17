@@ -43,7 +43,9 @@ export function Board({
   boardRotated180 = false,
   onSquareClick,
 }: Props) {
-  const cs = cellSize ?? (size === 10 ? 33 : 41);
+  // Fallback only — GameView always passes an explicit cellSize. Mobile-ish
+  // defaults bumped slightly (33→36, 41→44) to match the larger mobile board.
+  const cs = cellSize ?? (size === 10 ? 36 : 44);
   const total = size * cs;
   const isHi = (r: number, c: number) => highlighted.some(([a, b]) => a === r && b === c);
   const isLast = (r: number, c: number) => lastMove?.some(([a, b]) => a === r && b === c) ?? false;

@@ -179,16 +179,22 @@ export function GameView({
   const secondsTotal = TURN_SECONDS;
 
   // Responsive board cell size: bigger on desktop, mobile-safe below lg.
-  // Mirrors the Claude-Design export (hill 56/33, classic 66/41).
-  const isDesktop =
-    typeof window !== 'undefined' && window.innerWidth >= 1024;
-  const cellSize = isDesktop
-    ? vm.size === 10
-      ? 56
-      : 66
-    : vm.size === 10
-      ? 33
-      : 41;
+  // Desktop mirrors the Claude-Design export (hill 56, classic 66).
+  // Mobile scales the cell to the px-3 (24px) padded viewport so the board
+  // is a touch larger than the old fixed 33/41 for easier thumb play, while
+  // still fitting 360-430px phones with breathing room. Clamped both ways:
+  // never smaller than the old sizes, never oversized on big phones.
+  const viewportW = typeof window !== 'undefined' ? window.innerWidth : 0;
+  const isDesktop = viewportW >= 1024;
+  const mobileCell = (() => {
+    // 24px = container px-3 on both sides; +8px reserved so the board never
+    // sits flush against the screen edge (real breathing room at 360px).
+    const avail = (viewportW || 375) - 32;
+    return vm.size === 10
+      ? Math.max(33, Math.min(38, Math.floor(avail / 10)))
+      : Math.max(41, Math.min(46, Math.floor(avail / 8)));
+  })();
+  const cellSize = isDesktop ? (vm.size === 10 ? 56 : 66) : mobileCell;
 
   // 4P "King of the Hill" seats are corner-based: P1 (top-left) + P4
   // (bottom-left) flank the board on the left; P2 (top-right) + P3
