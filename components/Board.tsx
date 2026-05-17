@@ -26,6 +26,13 @@ interface Props {
    * undefined for hot-seat / shared-screen (no rotation).
    */
   localPlayer?: PlayerNum;
+  /**
+   * True when an ancestor applied a 180° CSS rotation (hot-seat desktop
+   * active-player view). Forwarded to PieceShape so the king ✦ marker
+   * counter-rotates and stays upright. Purely cosmetic — coords are
+   * unaffected (the rotation is on a wrapper, not in coordinate space).
+   */
+  boardRotated180?: boolean;
   onSquareClick?: (r: number, c: number) => void;
 }
 
@@ -33,6 +40,7 @@ export function Board({
   size = 8, pieces = [], centerZone = [], highlighted = [],
   selected = null, lastMove = null, cellSize = null,
   skinForPlayer = {}, isYourTurn = false, ownPlayer, localPlayer,
+  boardRotated180 = false,
   onSquareClick,
 }: Props) {
   const cs = cellSize ?? (size === 10 ? 33 : 41);
@@ -148,6 +156,7 @@ export function Board({
               dimmed={p.dimmed}
               skin={p.skin ?? skinForPlayer[p.player] ?? 'bronze'}
               interactive={isOwn && isYourTurn}
+              boardRotated180={boardRotated180}
             />
           </div>
         );

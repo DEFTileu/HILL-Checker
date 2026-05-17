@@ -44,6 +44,15 @@ interface Props {
    * players share one screen). Game state stays canonical.
    */
   localPlayer?: PlayerNum;
+  /**
+   * Hot-seat only: on DESKTOP (lg+), spin the board 180° while it's
+   * player 2's turn so each player sees their own pieces at the bottom of
+   * the shared screen. Mobile is left unrotated (too jarring on a small
+   * screen). Coords stay canonical — this is a pure CSS transform, and the
+   * browser rotates the pointer hit-region with the pixels, so clicks land
+   * correctly without any manual coordinate conversion.
+   */
+  rotateForActivePlayerDesktop?: boolean;
 }
 
 const clock = (s: number) =>
@@ -154,6 +163,7 @@ export function GameView({
   roomCode,
   mode = 'multiplayer',
   localPlayer,
+  rotateForActivePlayerDesktop = false,
 }: Props) {
   const hideYou = mode === 'hot-seat';
   const is4P = vm.players.length > 2;
@@ -256,18 +266,33 @@ export function GameView({
           )}
 
           <div className="flex justify-center lg:items-center">
-            <Board
-              size={vm.size}
-              pieces={vm.pieces}
-              centerZone={vm.centerZone}
-              cellSize={cellSize}
-              selected={selected}
-              highlighted={legalTargets}
-              lastMove={lastMove}
-              isYourTurn={isYourTurn}
-              localPlayer={localPlayer}
-              onSquareClick={onSquareClick}
-            />
+            {/* Hot-seat desktop: spin to the active player's perspective.
+                lg:rotate-180 keeps mobile unrotated. The 180° here pairs
+                with the lg:rotate-180 counter on the king ✦ inside
+                PieceShape so crowns stay upright. */}
+            <div
+              className={`transition-transform duration-500 ease-in-out ${
+                rotateForActivePlayerDesktop && active.player === 2
+                  ? 'lg:rotate-180'
+                  : ''
+              }`}
+            >
+              <Board
+                size={vm.size}
+                pieces={vm.pieces}
+                centerZone={vm.centerZone}
+                cellSize={cellSize}
+                selected={selected}
+                highlighted={legalTargets}
+                lastMove={lastMove}
+                isYourTurn={isYourTurn}
+                localPlayer={localPlayer}
+                boardRotated180={
+                  rotateForActivePlayerDesktop && active.player === 2
+                }
+                onSquareClick={onSquareClick}
+              />
+            </div>
           </div>
 
           {/* Desktop RIGHT rail */}

@@ -13,6 +13,13 @@ interface Props {
   skin?: SkinId;
   /** When true, applies hover:scale-105 so the player can feel their own piece is interactive. */
   interactive?: boolean;
+  /**
+   * True when this piece is rendered on a board an ancestor rotated 180°
+   * at lg+ (hot-seat desktop active-player view). The king/champion ✦
+   * marker counter-rotates by the same lg:rotate-180 so crowns stay
+   * upright. No effect on mobile (board isn't rotated there).
+   */
+  boardRotated180?: boolean;
 }
 
 /**
@@ -23,8 +30,11 @@ interface Props {
  */
 export function PieceShape({
   player, size = 28, isKing = false, dimmed = false,
-  skin = 'bronze', interactive = false,
+  skin = 'bronze', interactive = false, boardRotated180 = false,
 }: Props) {
+  // Counter-spin the crown so it stays upright when the board is flipped
+  // 180° at lg+. lg-only → mobile (unrotated board) is unaffected.
+  const crownCounter = boardRotated180 ? 'lg:rotate-180' : '';
   const fill = [HILL.p1, HILL.p2, HILL.p3, HILL.p4][player - 1];
   const stroke = player === 2 ? '#3a3a3a' : 'rgba(0,0,0,0.35)';
   const innerShine = player === 2 ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.25)';
@@ -210,7 +220,7 @@ export function PieceShape({
 
       {isChampion && (
         <div
-          className="absolute font-black pointer-events-none flex items-center justify-center text-[var(--hill-accent)]"
+          className={`absolute font-black pointer-events-none flex items-center justify-center text-[var(--hill-accent)] ${crownCounter}`}
           style={{
             top: -s * 0.08, right: -s * 0.1,
             width: s * 0.5, height: s * 0.5,
@@ -222,7 +232,7 @@ export function PieceShape({
 
       {isKing && (
         <div
-          className="absolute left-1/2 -translate-x-1/2 font-black pointer-events-none text-[var(--hill-accent)]"
+          className={`absolute left-1/2 -translate-x-1/2 font-black pointer-events-none text-[var(--hill-accent)] ${crownCounter}`}
           style={{
             top: -s * 0.22,
             fontSize: s * 0.42, lineHeight: 1,

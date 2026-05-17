@@ -96,6 +96,7 @@ export default function ClassicLocalPage() {
     <GameView
       vm={vm}
       mode="hot-seat"
+      rotateForActivePlayerDesktop
       remaining={remaining}
       selected={selected ? [selected.row, selected.col] : null}
       legalTargets={legalMoves.map((m) => [m.to.row, m.to.col])}
