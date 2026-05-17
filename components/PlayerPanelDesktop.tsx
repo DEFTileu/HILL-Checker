@@ -18,6 +18,8 @@ export interface DesktopPanelPlayer {
   alivePieces: number;
   capturedThisRound?: number;
   skin: SkinId;
+  /** Seconds left in the reconnect grace window; undefined when connected. */
+  disconnectSecondsLeft?: number;
 }
 
 interface Props {
@@ -33,13 +35,17 @@ interface Props {
 export function PlayerPanelDesktop({ player, side }: Props) {
   const color = [HILL.p1, HILL.p2, HILL.p3, HILL.p4][player.player - 1];
   const sideClass = side === 'left' ? 'left-0' : 'right-0';
+  const disconnected =
+    !player.eliminated && player.disconnectSecondsLeft != null;
 
   return (
     <div
       className={[
         'relative w-[220px] rounded-2xl p-4 pb-3.5 flex flex-col gap-3 transition-[border-color,box-shadow]',
         'bg-[var(--hill-surface)] border-[1.5px]',
-        player.isActive ? 'border-[var(--hill-accent)] shadow-[0_0_24px_rgba(191,255,0,0.15)]' : 'border-[var(--hill-border)]',
+        disconnected
+          ? 'border-[var(--hill-danger)] shadow-[0_0_24px_rgba(255,59,48,0.15)]'
+          : player.isActive ? 'border-[var(--hill-accent)] shadow-[0_0_24px_rgba(191,255,0,0.15)]' : 'border-[var(--hill-border)]',
         player.eliminated ? 'opacity-55' : '',
       ].join(' ')}
     >
@@ -69,7 +75,9 @@ export function PlayerPanelDesktop({ player, side }: Props) {
           <div className="mt-1">
             {player.eliminated
               ? <span className="text-[11px] text-[var(--hill-danger)] font-bold tracking-[0.08em]">ELIMINATED</span>
-              : <ArenaBadge tier={player.tier}/>}
+              : disconnected
+                ? <span className="text-[11px] text-[var(--hill-danger)] font-bold tracking-[0.06em] font-mono">Disconnected, {Math.max(0, player.disconnectSecondsLeft!)}s…</span>
+                : <ArenaBadge tier={player.tier}/>}
           </div>
         </div>
       </div>
@@ -94,7 +102,7 @@ export function PlayerPanelDesktop({ player, side }: Props) {
         </div>
       )}
 
-      {player.isActive && (
+      {player.isActive && !disconnected && (
         <div className="text-center font-mono text-[10px] font-bold text-[var(--hill-accent)] tracking-[0.2em]">
           ● THINKING · {player.secondsLeft}s
         </div>

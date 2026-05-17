@@ -13,6 +13,12 @@ export interface PlayerMeta {
   tier: ArenaTier;
   skin: SkinId;
   isYou?: boolean;
+  /**
+   * Whole seconds left in this player's reconnect grace window, or undefined
+   * when they are connected. Set only by the multiplayer room (hot-seat never
+   * disconnects). Spreads through `toGameViewModel` into GameViewPlayer.
+   */
+  disconnectSecondsLeft?: number;
 }
 
 export interface GameViewPlayer extends PlayerMeta {

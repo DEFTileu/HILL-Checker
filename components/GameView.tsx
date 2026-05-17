@@ -3,7 +3,11 @@
 import type { ReactNode } from 'react';
 import { Board } from './Board';
 import { PieceShape } from './PieceShape';
-import { ArenaBadge } from './ArenaBadge';
+import { PlayerSlot } from './PlayerSlot';
+import {
+  PlayerPanelDesktop,
+  type DesktopPanelPlayer,
+} from './PlayerPanelDesktop';
 import { TopBar } from './TopBar';
 import {
   GameOverOverlay,
@@ -31,6 +35,28 @@ interface Props {
 const clock = (s: number) =>
   `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`;
 
+/** GameViewPlayer -> the richer desktop side-rail panel shape. */
+function toDesktopPanel(
+  p: GameViewPlayer,
+  remaining: number,
+  secondsTotal: number,
+): DesktopPanelPlayer {
+  return {
+    player: p.player,
+    name: p.name,
+    tier: p.tier,
+    skin: p.skin,
+    you: p.isYou,
+    isActive: p.isActive,
+    secondsLeft: p.isActive ? Math.max(0, remaining) : undefined,
+    secondsTotal,
+    eliminated: !p.alive,
+    alivePieces: p.pieceCount,
+    disconnectSecondsLeft: p.disconnectSecondsLeft,
+  };
+}
+
+/** 2P classic desktop side panel (kept from the original layout). */
 function SidePanel({
   p,
   alignment,
@@ -65,8 +91,8 @@ function SidePanel({
               </span>
             )}
           </div>
-          <div className="mt-1.5">
-            <ArenaBadge tier={p.tier} />
+          <div className="mt-1.5 font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.12em]">
+            {p.alive ? `${p.pieceCount} PIECES` : 'OUT'}
           </div>
         </div>
       </div>
@@ -97,40 +123,6 @@ function SidePanel({
   );
 }
 
-function HillPanelStrip({ players }: { players: GameViewPlayer[] }) {
-  return (
-    <div className="flex flex-wrap justify-center gap-2.5 lg:gap-3 mb-4 lg:mb-5">
-      {players.map((p) => (
-        <div
-          key={p.player}
-          className={[
-            'flex items-center gap-2.5 px-3.5 py-2 rounded-xl border-[1.5px] bg-[var(--hill-surface)]',
-            p.isActive
-              ? 'border-[var(--hill-accent)] shadow-[0_0_18px_rgba(191,255,0,0.14)]'
-              : 'border-[var(--hill-border)]',
-            p.alive ? '' : 'opacity-40',
-          ].join(' ')}
-        >
-          <PieceShape player={p.player} size={26} skin={p.skin} />
-          <div className="leading-tight">
-            <div className="text-[13px] font-bold flex items-center gap-1.5">
-              {p.name}
-              {p.isYou && (
-                <span className="text-[8px] font-extrabold text-[var(--hill-accent)] tracking-[0.1em]">
-                  YOU
-                </span>
-              )}
-            </div>
-            <div className="font-mono text-[10px] text-[var(--hill-muted)] tracking-[0.12em]">
-              {p.alive ? `${p.pieceCount} PIECES` : 'OUT'}
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export function GameView({
   vm,
   remaining,
@@ -152,6 +144,27 @@ export function GameView({
       : vm.mode === 'hill-survival'
         ? 'HILL · SURVIVAL'
         : 'HILL · BLITZ';
+
+  // Survival gives a longer clock; everything else is the 10s blitz turn.
+  const secondsTotal = vm.mode === 'hill-survival' ? 15 : 10;
+
+  // Responsive board cell size: bigger on desktop, mobile-safe below lg.
+  // Mirrors the Claude-Design export (hill 56/33, classic 66/41).
+  const isDesktop =
+    typeof window !== 'undefined' && window.innerWidth >= 1024;
+  const cellSize = isDesktop
+    ? vm.size === 10
+      ? 56
+      : 66
+    : vm.size === 10
+      ? 33
+      : 41;
+
+  // Corner split for the 4P desktop rails: first half flanks the board on
+  // the left, second half on the right (works for 3 or 4 players too).
+  const half = Math.ceil(vm.players.length / 2);
+  const leftRail = vm.players.slice(0, half);
+  const rightRail = vm.players.slice(half);
 
   return (
     <>
@@ -198,20 +211,33 @@ export function GameView({
           <div className="flex flex-col items-center gap-1 mb-3">{banner}</div>
         )}
 
-        {is4P && <HillPanelStrip players={vm.players} />}
-
-        <div className="lg:flex lg:items-center lg:justify-center lg:gap-9">
-          {!is4P && (
+        {/* Board flanked by panels.
+            2P  → SidePanel left/right on desktop, score row on mobile.
+            4P  → PlayerPanelDesktop rails on desktop, 2×2 PlayerSlot on mobile. */}
+        <div className="lg:flex lg:items-start lg:justify-center lg:gap-7">
+          {/* Desktop LEFT rail */}
+          {is4P ? (
+            <div className="hidden lg:flex lg:flex-col lg:gap-3.5">
+              {leftRail.map((p) => (
+                <PlayerPanelDesktop
+                  key={p.player}
+                  player={toDesktopPanel(p, remaining, secondsTotal)}
+                  side="left"
+                />
+              ))}
+            </div>
+          ) : (
             <div className="hidden lg:block">
               <SidePanel p={vm.players[0]} alignment="right" />
             </div>
           )}
 
-          <div className="flex justify-center">
+          <div className="flex justify-center lg:items-center">
             <Board
               size={vm.size}
               pieces={vm.pieces}
               centerZone={vm.centerZone}
+              cellSize={cellSize}
               selected={selected}
               highlighted={legalTargets}
               lastMove={lastMove}
@@ -220,13 +246,49 @@ export function GameView({
             />
           </div>
 
-          {!is4P && (
+          {/* Desktop RIGHT rail */}
+          {is4P ? (
+            <div className="hidden lg:flex lg:flex-col lg:gap-3.5">
+              {rightRail.map((p) => (
+                <PlayerPanelDesktop
+                  key={p.player}
+                  player={toDesktopPanel(p, remaining, secondsTotal)}
+                  side="right"
+                />
+              ))}
+            </div>
+          ) : (
             <div className="hidden lg:block">
               <SidePanel p={vm.players[1]} alignment="left" />
             </div>
           )}
         </div>
 
+        {/* MOBILE 4P — 2×2 compact player grid */}
+        {is4P && (
+          <div className="lg:hidden px-1 mt-3">
+            <div className="grid grid-cols-2 gap-1.5">
+              {vm.players.map((p) => (
+                <PlayerSlot
+                  key={p.player}
+                  player={p.player}
+                  name={p.name}
+                  tier={p.tier}
+                  skin={p.skin}
+                  you={p.isYou}
+                  isActive={p.isActive}
+                  secondsLeft={p.isActive ? Math.max(0, remaining) : undefined}
+                  secondsTotal={secondsTotal}
+                  eliminated={!p.alive}
+                  disconnectSecondsLeft={p.disconnectSecondsLeft}
+                  compact
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* MOBILE 2P — score row */}
         {!is4P && (
           <div className="lg:hidden mt-5 px-7 flex justify-between font-mono text-xs text-[var(--hill-muted)] tracking-[0.04em]">
             {vm.players.map((p, i) => (

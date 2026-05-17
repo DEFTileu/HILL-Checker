@@ -19,6 +19,8 @@ interface Props {
   you?: boolean;
   compact?: boolean;
   skin?: SkinId;
+  /** Seconds left in the reconnect grace window; undefined when connected. */
+  disconnectSecondsLeft?: number;
 }
 
 /**
@@ -28,16 +30,19 @@ interface Props {
 export function PlayerSlot({
   player, name, tier, isHost, empty, eliminated,
   isActive, secondsLeft, secondsTotal = 10, you,
-  compact = false, skin = 'bronze',
+  compact = false, skin = 'bronze', disconnectSecondsLeft,
 }: Props) {
   const color = [HILL.p1, HILL.p2, HILL.p3, HILL.p4][player - 1];
+  const disconnected = !empty && !eliminated && disconnectSecondsLeft != null;
   return (
     <div
       className={[
         'relative flex items-center rounded-[14px] overflow-hidden transition-colors',
         compact ? 'gap-2.5 px-3 py-2.5 min-h-[64px]' : 'gap-3 p-3.5 min-h-[88px]',
         'bg-[var(--hill-surface)] border-[1.5px]',
-        isActive ? 'border-[var(--hill-accent)]' : empty ? 'border-white/[0.06]' : 'border-[var(--hill-border)]',
+        disconnected
+          ? 'border-[var(--hill-danger)]'
+          : isActive ? 'border-[var(--hill-accent)]' : empty ? 'border-white/[0.06]' : 'border-[var(--hill-border)]',
         eliminated ? 'opacity-55' : '',
       ].join(' ')}
     >
@@ -84,7 +89,9 @@ export function PlayerSlot({
             ? <span className="text-[11px] text-[var(--hill-dim)] font-mono">Slot P{player} · open</span>
             : eliminated
               ? <span className="text-[11px] text-[var(--hill-danger)] font-bold tracking-[0.08em]">ELIMINATED</span>
-              : tier && <ArenaBadge tier={tier}/>}
+              : disconnected
+                ? <span className="text-[11px] text-[var(--hill-danger)] font-bold tracking-[0.06em] font-mono">Disconnected, {Math.max(0, disconnectSecondsLeft!)}s…</span>
+                : tier && <ArenaBadge tier={tier}/>}
         </div>
       </div>
     </div>

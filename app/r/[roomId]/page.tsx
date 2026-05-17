@@ -390,36 +390,25 @@ export default function RoomPage({
     const meta: PlayerMeta[] = (Object.keys(slots) as unknown as Player[])
       .map(Number)
       .filter((p): p is Player => !!slots[p as Player])
-      .map((p) => ({
-        player: p as Player,
-        name: slots[p as Player]!.displayName,
-        tier: slots[p as Player]!.tier,
-        skin: slots[p as Player]!.skin,
-        isYou: slots[p as Player]!.userId === user?.id,
-      }));
+      .map((p) => {
+        const dcAt = disconnectedAt[p];
+        return {
+          player: p as Player,
+          name: slots[p as Player]!.displayName,
+          tier: slots[p as Player]!.tier,
+          skin: slots[p as Player]!.skin,
+          isYou: slots[p as Player]!.userId === user?.id,
+          disconnectSecondsLeft:
+            dcAt != null
+              ? Math.max(0, Math.ceil((dcAt + 10_000 - now) / 1000))
+              : undefined,
+        };
+      });
 
     const vm = toGameViewModel(state, meta);
     const remaining = state.turnDeadline
       ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000))
       : 0;
-
-    const dcBanner = Object.keys(disconnectedAt)
-      .map((k) => Number(k) as Player)
-      .filter((p) => disconnectedAt[p] != null)
-      .map((p) => {
-        const secs = Math.max(
-          0,
-          Math.ceil((disconnectedAt[p]! + 10_000 - now) / 1000),
-        );
-        return (
-          <div
-            key={`dc-${p}`}
-            className="font-mono text-[11px] tracking-[0.16em] text-hill-danger"
-          >
-            P{p} DISCONNECTED · {secs}s…
-          </div>
-        );
-      });
 
     return (
       <GameView
@@ -431,7 +420,6 @@ export default function RoomPage({
         isYourTurn={canMove}
         onSquareClick={handleSquare}
         onResign={() => router.push('/')}
-        banner={dcBanner.length ? dcBanner : undefined}
         gameOver={
           go
             ? {
