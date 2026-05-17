@@ -3,7 +3,7 @@ import { getSupabase } from '@/lib/multiplayer/client';
 import type { GameState } from '@/lib/engine/types';
 import type { SlotMap } from '@/lib/multiplayer/adapt';
 
-export type RoomMode = 'hill-blitz' | 'hill-survival';
+export type RoomMode = 'hill-blitz' | 'hill-survival' | 'classic-2p';
 export type RoomStatus = 'lobby' | 'playing' | 'finished';
 
 export interface RoomState {

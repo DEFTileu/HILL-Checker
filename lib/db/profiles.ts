@@ -14,6 +14,7 @@ interface ProfileRow {
   total_wins: number;
   total_games: number;
   skin_id: string;
+  is_anonymous: boolean;
   created_at: string;
 }
 
@@ -44,17 +45,41 @@ function toProfile(row: ProfileRow, authUser: User | null): Profile {
 export async function ensureProfile(authUser: User): Promise<Profile> {
   const sb = getSupabase();
 
+  // A linked (Google) account reports is_anonymous === false. Anonymous guests
+  // report true (or undefined on older sessions). This drives the
+  // authorized-only leaderboard filter.
+  const authorized = authUser.is_anonymous === false;
+
   const { data: existing } = await sb
     .from('profiles')
     .select('*')
     .eq('id', authUser.id)
     .maybeSingle();
 
-  if (existing) return toProfile(existing as ProfileRow, authUser);
+  if (existing) {
+    const row = existing as ProfileRow;
+    // Promote to authorized the first time we see a linked session (e.g. the
+    // user just linked Google — onAuthStateChange re-runs this). We only ever
+    // flip true → false; a signed-out user becomes a brand-new anon id anyway.
+    if (authorized && row.is_anonymous !== false) {
+      const { data: upd } = await sb
+        .from('profiles')
+        .update({ is_anonymous: false })
+        .eq('id', authUser.id)
+        .select('*')
+        .single();
+      if (upd) return toProfile(upd as ProfileRow, authUser);
+    }
+    return toProfile(row, authUser);
+  }
 
   const { data: created, error } = await sb
     .from('profiles')
-    .insert({ id: authUser.id, display_name: randomName() })
+    .insert({
+      id: authUser.id,
+      display_name: randomName(),
+      is_anonymous: !authorized,
+    })
     .select('*')
     .single();
 

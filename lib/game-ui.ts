@@ -3,7 +3,7 @@
 import type { Player } from './tokens';
 import type { ArenaTier, SkinId } from './skins';
 
-export type GameMode = 'blitz' | 'survival';
+export type GameMode = 'blitz' | 'survival' | 'classic';
 export type PlayStyle = 'hotseat' | 'multi';
 
 export interface Profile {
