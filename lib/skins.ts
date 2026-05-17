@@ -1,6 +1,6 @@
 // lib/skins.ts
-// Superset module: preserves the original Phase-3 exports used by the
-// components/hill/* tree and lib/arena.ts, while ALSO exposing the names the
+// Superset module: preserves the original Phase-3 exports used by
+// lib/arena.ts, while ALSO exposing the names the
 // flat Claude-Design export expects (TierId, SkinDef, UNLOCK_WINS, PlayerNum).
 import { HILL } from './tokens';
 
@@ -29,14 +29,6 @@ export const SKINS: Record<SkinId, SkinDef> = {
   gold:     { name: 'Gold',     tier: 'Gold',     color: HILL.gold,     tag: 'HALO' },
   master:   { name: 'Master',   tier: 'Master',   color: HILL.master,   tag: 'FACETS' },
   champion: { name: 'Champion', tier: 'Champion', color: HILL.champion, tag: 'CROWN' },
-};
-
-export const TIER_META: Record<ArenaTier, { icon: string; color: string }> = {
-  Bronze:   { icon: '🥉', color: HILL.bronze },
-  Silver:   { icon: '🥈', color: HILL.silver },
-  Gold:     { icon: '🥇', color: HILL.gold },
-  Master:   { icon: '◆',  color: HILL.master },
-  Champion: { icon: '👑', color: HILL.champion },
 };
 
 export const WINS_TO_UNLOCK: Record<ArenaTier, number> = {
