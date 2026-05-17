@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/auth';
 import { TopNav } from '@/components/TopNav';
 import { BottomNav } from '@/components/BottomNav';
@@ -64,6 +65,7 @@ export default function RootLayout({
           <main className="pb-[88px] lg:pb-0">{children}</main>
           <BottomNav />
         </AuthProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
