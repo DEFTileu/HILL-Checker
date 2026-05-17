@@ -14,6 +14,7 @@ import {
   type RoomMode,
   type RoomRow,
 } from '@/lib/db/rooms';
+import { recordGame } from '@/lib/db/games';
 import {
   subscribeToRoom,
   broadcastMove,
@@ -194,14 +195,10 @@ export default function RoomPage({
       const winnerIds = winners
         .map((p) => sl[p]?.userId)
         .filter((x): x is string => !!x);
-      void fetch('/api/games', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          mode: state.config.mode,
-          winners: winnerIds,
-          players,
-        }),
+      void recordGame({
+        mode: state.config.mode,
+        winners: winnerIds,
+        players,
       });
     }
   }, [state, winners, roomId]);
