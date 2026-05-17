@@ -28,6 +28,7 @@ import {
 } from '@/lib/multiplayer/channel';
 import {
   assignSlots,
+  orderPresence,
   toTuple,
   winnersToGameOver,
   type PresenceEntry,
@@ -448,7 +449,7 @@ export default function RoomPage({
 
   // LOBBY view
   const cfg = PRESET[mode];
-  const sorted = [...presence].sort((a, b) => a.joinedAt - b.joinedAt);
+  const sorted = orderPresence(presence, room.host_user_id);
   const lobbyPlayers = cfg.players.map((p, i) => {
     const e = sorted[i];
     if (!e) return { player: p, empty: true as const };
@@ -467,7 +468,11 @@ export default function RoomPage({
     if (!isHost || !chRef.current) return;
     const filled = presence.length;
     if (filled < 2) return;
-    const sl = assignSlots(presence, cfg.players.slice(0, filled));
+    const sl = assignSlots(
+      presence,
+      cfg.players.slice(0, filled),
+      room.host_user_id,
+    );
     const initial = createInitialState(cfg);
     const ts = Date.now();
     startedAt.current = ts;

@@ -4,6 +4,7 @@ import {
   toTuple,
   toCoord,
   assignSlots,
+  orderPresence,
   winnersToGameOver,
   type PresenceEntry,
 } from './adapt';
@@ -32,18 +33,53 @@ describe('coord conversion', () => {
   });
 });
 
+const pe = (id: string, t: number): PresenceEntry => ({
+  userId: id, displayName: id, tier: 'Bronze', skin: 'bronze', joinedAt: t,
+});
+
+describe('orderPresence', () => {
+  it('orders by joinedAt when no host given', () => {
+    const out = orderPresence([pe('c', 30), pe('a', 10), pe('b', 20)]);
+    expect(out.map((e) => e.userId)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('puts the host first, others by joinedAt', () => {
+    // Host joined LAST in wall-clock time but must still lead.
+    const out = orderPresence(
+      [pe('a', 10), pe('b', 20), pe('host', 99)],
+      'host',
+    );
+    expect(out.map((e) => e.userId)).toEqual(['host', 'a', 'b']);
+  });
+
+  it('falls back to joinedAt order when the host is absent', () => {
+    const out = orderPresence([pe('b', 20), pe('a', 10)], 'ghost');
+    expect(out.map((e) => e.userId)).toEqual(['a', 'b']);
+  });
+});
+
 describe('assignSlots', () => {
   it('orders by joinedAt and caps at the player count', () => {
-    const e = (id: string, t: number): PresenceEntry => ({
-      userId: id, displayName: id, tier: 'Bronze', skin: 'bronze', joinedAt: t,
-    });
     const slots = assignSlots(
-      [e('c', 30), e('a', 10), e('b', 20), e('d', 40), e('x', 50)],
+      [pe('c', 30), pe('a', 10), pe('b', 20), pe('d', 40), pe('x', 50)],
       [1, 2, 3, 4],
     );
     expect(slots[1]?.userId).toBe('a');
     expect(slots[2]?.userId).toBe('b');
     expect(slots[3]?.userId).toBe('c');
+    expect(slots[4]?.userId).toBe('d');
+  });
+
+  it('always gives the host slot 1, others fill 2..N by join order', () => {
+    // host joined third but owns slot 1; the rest keep join order.
+    const slots = assignSlots(
+      [pe('a', 10), pe('b', 20), pe('host', 30), pe('d', 40)],
+      [1, 2, 3, 4],
+      'host',
+    );
+    expect(slots[1]?.userId).toBe('host');
+    expect(slots[2]?.userId).toBe('a');
+    expect(slots[3]?.userId).toBe('b');
     expect(slots[4]?.userId).toBe('d');
   });
 });

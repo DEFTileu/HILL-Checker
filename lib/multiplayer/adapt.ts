@@ -31,12 +31,33 @@ export interface PresenceEntry extends SlotInfo {
   joinedAt: number;
 }
 
-/** First-come-first-serve: sort by joinedAt, fill players in turn order. */
-export function assignSlots(entries: PresenceEntry[], players: Player[]): SlotMap {
-  const sorted = [...entries].sort((a, b) => a.joinedAt - b.joinedAt);
+/**
+ * Canonical lobby order: the room host always leads (slot 1), everyone else
+ * follows in join order. Falls back to pure joinedAt order when no host id is
+ * given or the host is not present in the entries. Used by both the lobby
+ * render and assignSlots so display and game slots never disagree.
+ */
+export function orderPresence(
+  entries: PresenceEntry[],
+  hostUserId?: string,
+): PresenceEntry[] {
+  const byJoin = [...entries].sort((a, b) => a.joinedAt - b.joinedAt);
+  if (!hostUserId) return byJoin;
+  const host = byJoin.find((e) => e.userId === hostUserId);
+  if (!host) return byJoin;
+  return [host, ...byJoin.filter((e) => e.userId !== hostUserId)];
+}
+
+/** Host gets slot 1; remaining players fill in join order. */
+export function assignSlots(
+  entries: PresenceEntry[],
+  players: Player[],
+  hostUserId?: string,
+): SlotMap {
+  const ordered = orderPresence(entries, hostUserId);
   const map: SlotMap = {};
   players.forEach((p, i) => {
-    const e = sorted[i];
+    const e = ordered[i];
     if (e) map[p] = { userId: e.userId, displayName: e.displayName, tier: e.tier, skin: e.skin };
   });
   return map;
