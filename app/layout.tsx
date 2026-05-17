@@ -5,6 +5,12 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import { AuthProvider } from '@/lib/auth';
 import { TopNav } from '@/components/TopNav';
 import { BottomNav } from '@/components/BottomNav';
+import { MobileThemeToggle } from '@/components/MobileThemeToggle';
+
+// Runs during HTML parse, before first paint: resolves the persisted theme
+// and stamps <html data-theme> so there's no dark->light flash for users
+// who picked light. Default is dark (matches :root / SSR).
+const NO_FLASH_THEME = `(function(){try{var t=localStorage.getItem('hill-theme');if(t!=='light'&&t!=='dark')t='dark';document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme='dark';}})();`;
 
 const inter = Inter({
   variable: '--font-inter',
@@ -52,12 +58,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${inter.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-hill-bg text-hill-text">
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME }} />
         <AuthProvider>
           {/* Desktop sticky header. Renders only on lg+ via `hidden lg:flex` inside. */}
           <TopNav />
+          {/* Mobile chrome toggle (TopNav is desktop-only). */}
+          <MobileThemeToggle />
           {/*
             Bottom safe area for mobile so BottomNav doesn't sit on top of content.
             On desktop the bottom nav is hidden so we zero out the padding via lg:.

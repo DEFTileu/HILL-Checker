@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GoogleG } from './GoogleG';
 import { WelcomeChip } from './WelcomeChip';
+import { ThemeToggle } from './ThemeToggle';
 import { useAuth } from '@/lib/auth';
 
 const TABS = [
@@ -33,7 +34,7 @@ export function TopNav() {
 
   return (
     <header
-      className="hidden lg:flex sticky top-0 z-30 h-16 items-center backdrop-blur-xl bg-[rgba(10,10,10,0.85)] border-b border-[var(--hill-border)]"
+      className="hidden lg:flex sticky top-0 z-30 h-16 items-center backdrop-blur-xl bg-[var(--hill-navBg)] border-b border-[var(--hill-border)]"
     >
       <div className="w-full max-w-[1280px] mx-auto px-8 flex items-center justify-between gap-8">
         <Link href="/" className="inline-flex items-baseline gap-2 no-underline">
@@ -72,6 +73,7 @@ export function TopNav() {
         </nav>
 
         <div className="min-w-[240px] flex items-center justify-end gap-3">
+          <ThemeToggle />
           {loading ? null : signedIn && profile ? (
             <WelcomeChip
               user={{
