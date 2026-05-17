@@ -22,7 +22,6 @@ import {
   broadcastGameStart,
   broadcastSyncRequest,
   broadcastSyncResponse,
-  broadcastModeChange,
   broadcastForfeit,
   broadcastGameResult,
   trackPresence,
@@ -505,16 +504,6 @@ export default function RoomPage({
     });
   };
 
-  const cycleMode = () => {
-    if (!isHost || !chRef.current) return;
-    // Classic has a single ruleset — no in-lobby toggle (the button is
-    // hidden too). Only Hill flips between blitz/survival.
-    if (mode === 'classic-2p') return;
-    const next: RoomMode =
-      mode === 'hill-blitz' ? 'hill-survival' : 'hill-blitz';
-    setMode(next);
-    broadcastModeChange(chRef.current, next);
-  };
 
   return (
     <Lobby
@@ -523,7 +512,6 @@ export default function RoomPage({
       players={lobbyPlayers}
       isHost={isHost}
       onStart={onStart}
-      onChangeMode={cycleMode}
       onCopyLink={() => {
         void navigator.clipboard.writeText(window.location.href);
       }}

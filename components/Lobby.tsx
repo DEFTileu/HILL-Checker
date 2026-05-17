@@ -13,7 +13,6 @@ export interface LobbyProps {
     onStart: () => void;
     onCopyLink: () => void;
     onShare: () => void;
-    onChangeMode: () => void;
     onBack: () => void;
 }
 

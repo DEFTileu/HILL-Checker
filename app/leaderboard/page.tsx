@@ -1,6 +1,12 @@
 // app/leaderboard/page.tsx — Claude Design table/cards, wired to real data.
 'use client';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { LeaderboardTable } from '@/components/LeaderboardTable';
 import {
@@ -12,7 +18,10 @@ import {
 } from '@/lib/db/leaderboard';
 import { useAuth } from '@/lib/auth';
 
-const FILTERS = ['Global', 'Friends · 12', 'This week', 'Blitz only', 'Survival only'] as const;
+// Only filters with real backing. "Friends" and "This week" were removed —
+// there is no friends graph or per-week aggregation behind them, so they
+// were decorative (and misleading).
+const FILTERS = ['Global', 'Blitz only', 'Survival only'] as const;
 type Filter = typeof FILTERS[number];
 
 export default function LeaderboardPage() {
@@ -21,7 +30,15 @@ export default function LeaderboardPage() {
   const [modeCounts, setModeCounts] = useState<Map<string, ModeCounts>>(new Map());
   const [active, setActive] = useState<Filter>('Global');
   const [query, setQuery] = useState('');
-  const [isMac, setIsMac] = useState(false);
+  // Client-only platform read. useSyncExternalStore gives a stable server
+  // snapshot (false) so there's no hydration mismatch and no setState-in-
+  // effect — the keydown effect below still derives its own local `mac`.
+  const isMac = useSyncExternalStore(
+    () => () => {},
+    () =>
+      /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent),
+    () => false,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,7 +61,6 @@ export default function LeaderboardPage() {
     const mac = /Mac|iPhone|iPad|iPod/.test(
       navigator.platform || navigator.userAgent,
     );
-    setIsMac(mac);
     const onKey = (e: KeyboardEvent) => {
       const combo = mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
       if (combo && e.key.toLowerCase() === 'k') {
