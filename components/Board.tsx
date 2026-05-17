@@ -56,6 +56,10 @@ export function Board({
 
   return (
     <div
+      // Theme-independent play surface (spec §00/§D): force the dark token
+      // scope so the board, pieces and Hill zone stay identical even when
+      // the app chrome is in light theme.
+      data-theme="dark"
       className="relative bg-[var(--hill-surface)] rounded-md overflow-hidden"
       style={{
         width: total, height: total,

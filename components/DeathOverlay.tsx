@@ -25,6 +25,8 @@ export function DeathOverlay({ round, eliminatedPlayer, onSpectate, onLeave, onC
 
   return (
     <div
+      // Cinematic moment — stays dark in both themes (spec §G/§H).
+      data-theme="dark"
       className="fixed inset-0 z-50 flex flex-col px-6 pt-14 pb-6 lg:px-12 lg:pt-0 lg:pb-12 lg:justify-center animate-[hill-fadein_.35s_ease] bg-[radial-gradient(120%_80%_at_50%_30%,rgba(255,59,48,0.28),rgba(10,10,10,0.85)_60%,rgba(10,10,10,0.96))] lg:bg-red-900/30 lg:bg-none lg:backdrop-blur-md"
       role="dialog"
       aria-modal="true"

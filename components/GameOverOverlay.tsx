@@ -99,6 +99,8 @@ export function GameOverOverlay({
 
     return (
         <div
+            // Cinematic moment — stays dark in both themes (spec §G/§H).
+            data-theme="dark"
             className={[
                 'fixed inset-0 z-50 flex flex-col animate-hill-fadein',
                 bgMobile,
