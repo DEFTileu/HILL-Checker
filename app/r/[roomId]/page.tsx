@@ -35,7 +35,7 @@ import {
   type SlotMap,
 } from '@/lib/multiplayer/adapt';
 import { Lobby } from '@/components/hill/screens/Lobby';
-import { Board } from '@/components/hill/Board';
+import { Board } from '@/components/Board';
 import { GameOverOverlay } from '@/components/hill/screens/GameOverOverlay';
 import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
@@ -332,7 +332,7 @@ export default function RoomPage({
     legalMoves.find((m) => m.to.row === r && m.to.col === c);
 
   const handleSquare = useCallback(
-    ([r, c]: [number, number]) => {
+    (r: number, c: number) => {
       if (!state || winners || !canMove) return;
       const m = moveTo(r, c);
       if (m) {
@@ -413,6 +413,7 @@ export default function RoomPage({
           centerZone={cfg.centerZone.map(toTuple)}
           selected={selected ? toTuple(selected) : null}
           highlighted={legalMoves.map((m) => toTuple(m.to))}
+          isYourTurn={canMove}
           onSquareClick={handleSquare}
         />
         {go && (
