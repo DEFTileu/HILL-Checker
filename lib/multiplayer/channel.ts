@@ -1,12 +1,15 @@
 'use client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/multiplayer/client';
-import type { Action, GameState } from '@/lib/engine/types';
+import type { Action, GameState, Player } from '@/lib/engine/types';
 import type { SlotMap, PresenceEntry } from '@/lib/multiplayer/adapt';
 import type { RoomMode } from '@/lib/db/rooms';
 
 export interface RoomHandlers {
   onPresenceSync: (entries: PresenceEntry[]) => void;
+  onPresenceJoin: (userIds: string[]) => void;
+  onPresenceLeave: (userIds: string[]) => void;
+  onForfeit: (player: Player) => void;
   onMove: (action: Action) => void;
   onGameStart: (payload: { state: GameState; slots: SlotMap }) => void;
   onSyncRequest: () => void;
@@ -33,6 +36,19 @@ export function subscribeToRoom(
     handlers.onPresenceSync(entries);
   });
 
+  ch.on('presence', { event: 'join' }, ({ newPresences }) => {
+    const ids = (newPresences as unknown as PresenceEntry[])
+      .map((p) => p?.userId)
+      .filter((x): x is string => !!x);
+    if (ids.length) handlers.onPresenceJoin(ids);
+  });
+  ch.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+    const ids = (leftPresences as unknown as PresenceEntry[])
+      .map((p) => p?.userId)
+      .filter((x): x is string => !!x);
+    if (ids.length) handlers.onPresenceLeave(ids);
+  });
+
   // Broadcast callbacks receive the full envelope: { type, event, payload, ... }.
   // We destructure `.payload` from it, casting to the expected type.
   ch.on('broadcast', { event: 'game:move' }, ({ payload }) =>
@@ -47,6 +63,9 @@ export function subscribeToRoom(
   );
   ch.on('broadcast', { event: 'room:mode' }, ({ payload }) =>
     handlers.onModeChange((payload as { mode: RoomMode }).mode),
+  );
+  ch.on('broadcast', { event: 'player_forfeit' }, ({ payload }) =>
+    handlers.onForfeit((payload as { player: Player }).player),
   );
   return ch;
 }
@@ -68,6 +87,13 @@ export function broadcastSyncResponse(ch: RealtimeChannel, state: GameState) {
 }
 export function broadcastModeChange(ch: RealtimeChannel, mode: RoomMode) {
   return ch.send({ type: 'broadcast', event: 'room:mode', payload: { mode } });
+}
+export function broadcastForfeit(ch: RealtimeChannel, player: Player) {
+  return ch.send({
+    type: 'broadcast',
+    event: 'player_forfeit',
+    payload: { player },
+  });
 }
 export function trackPresence(ch: RealtimeChannel, entry: PresenceEntry) {
   return ch.track(entry);
