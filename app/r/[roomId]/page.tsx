@@ -94,24 +94,23 @@ export default function RoomPage({
 
   // Apply an engine action locally; mover also broadcasts.
   const applyAction = useCallback((action: Action, broadcast: boolean) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = applyMove(prev, action);
-      if (broadcast && chRef.current) broadcastMove(chRef.current, action);
-      return next;
-    });
+    setState((prev) => (prev ? applyMove(prev, action) : prev));
+    if (broadcast && chRef.current && stateRef.current) {
+      broadcastMove(chRef.current, action);
+    }
   }, []);
 
   // Apply a forfeit locally; host also broadcasts. Mirrors applyAction.
   const applyForfeit = useCallback((player: Player, broadcast: boolean) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = forfeitPlayer(prev, player);
-      if (broadcast && isHostRef.current && chRef.current) {
-        broadcastForfeit(chRef.current, player);
-      }
-      return next;
-    });
+    setState((prev) => (prev ? forfeitPlayer(prev, player) : prev));
+    if (
+      broadcast &&
+      isHostRef.current &&
+      chRef.current &&
+      stateRef.current
+    ) {
+      broadcastForfeit(chRef.current, player);
+    }
     setDisconnectedAt((prev) => {
       if (prev[player] == null) return prev;
       const copy = { ...prev };
@@ -391,7 +390,7 @@ export default function RoomPage({
           ROOM {roomId} · ROUND {state.round}
           {canMove ? ' · YOUR TURN' : ` · P${state.currentPlayer}`}
         </div>
-        {(Object.keys(disconnectedAt) as unknown as Player[])
+        {Object.keys(disconnectedAt)
           .map((k) => Number(k) as Player)
           .filter((p) => disconnectedAt[p] != null)
           .map((p) => {
