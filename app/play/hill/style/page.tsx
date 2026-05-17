@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { TopBar } from '@/components/TopBar';
 import { PlayStyleCard } from '@/components/PlayStyleCard';
 import { CTAButton } from '@/components/CTAButton';
+import { createRoom } from '@/lib/db/rooms';
 
 const OPTIONS = [
   {
@@ -28,6 +29,8 @@ function PlayStyleInner() {
   const search = useSearchParams();
   const mode = (search.get('mode') as 'blitz' | 'survival') ?? 'blitz';
   const [selected, setSelected] = useState<'hotseat' | 'multi'>('multi');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
 
   return (
     <>
@@ -72,10 +75,37 @@ function PlayStyleInner() {
             variant="primary"
             full={false}
             className="w-full lg:w-auto lg:px-8 lg:h-[68px] lg:text-lg"
-            onClick={() => router.push(`/r/ABCD?mode=${mode}&style=${selected}`)}
+            disabled={busy}
+            onClick={async () => {
+              if (busy) return;
+              if (selected === 'hotseat') {
+                router.push(`/play/hill/local?mode=${mode}`);
+                return;
+              }
+              setBusy(true);
+              setErr(false);
+              try {
+                const { id } = await createRoom(
+                  mode === 'survival' ? 'hill-survival' : 'hill-blitz',
+                );
+                router.replace(`/r/${id}`);
+              } catch {
+                setBusy(false);
+                setErr(true);
+              }
+            }}
           >
-            {selected === 'multi' ? 'Create room  →' : 'Start hot-seat  →'}
+            {busy
+              ? 'Creating room…'
+              : selected === 'multi'
+                ? 'Create room  →'
+                : 'Start hot-seat  →'}
           </CTAButton>
+          {err && (
+            <p className="mt-2 text-center text-xs text-[var(--hill-danger)]">
+              Could not create a room. Tap to try again.
+            </p>
+          )}
         </div>
       </div>
     </>

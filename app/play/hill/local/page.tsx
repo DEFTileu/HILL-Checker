@@ -1,8 +1,8 @@
-// app/play/classic/page.tsx — fully playable local 2-player checkers.
+// app/play/hill/local/page.tsx — local 4-player King of the Hill (hot-seat).
 'use client';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { classic2P } from '@/lib/engine/presets';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { hillBlitz, hillSurvival } from '@/lib/engine/presets';
 import { applyMove, createInitialState } from '@/lib/engine/apply';
 import { getLegalMoves } from '@/lib/engine/rules';
 import { checkWinners } from '@/lib/engine/endgame';
@@ -15,14 +15,19 @@ import {
 } from '@/lib/game-ui-view';
 
 const META: PlayerMeta[] = [
-  { player: 1, name: 'White', tier: 'Bronze', skin: 'silver', isYou: true },
-  { player: 2, name: 'Black', tier: 'Bronze', skin: 'gold' },
+  { player: 1, name: 'Player 1', tier: 'Bronze', skin: 'silver' },
+  { player: 2, name: 'Player 2', tier: 'Bronze', skin: 'gold' },
+  { player: 3, name: 'Player 3', tier: 'Bronze', skin: 'bronze' },
+  { player: 4, name: 'Player 4', tier: 'Bronze', skin: 'master' },
 ];
 
-export default function ClassicPage() {
+function HillLocalInner() {
   const router = useRouter();
+  const search = useSearchParams();
+  const mode = search.get('mode') === 'survival' ? 'survival' : 'blitz';
+
   const [state, setState] = useState<GameState>(() =>
-    createInitialState(classic2P),
+    createInitialState(mode === 'survival' ? hillSurvival : hillBlitz),
   );
   const [selected, setSelected] = useState<Coord | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -30,7 +35,6 @@ export default function ClassicPage() {
   const startedAt = useRef<number>(Date.now());
 
   const winners = useMemo(() => checkWinners(state), [state]);
-
   const legalMoves = useMemo(
     () => (selected && !winners ? getLegalMoves(state, selected) : []),
     [state, selected, winners],
@@ -38,7 +42,6 @@ export default function ClassicPage() {
   const moveTo = (r: number, c: number) =>
     legalMoves.find((m) => m.to.row === r && m.to.col === c);
 
-  // 4Hz clock for countdown + skip-on-expiry (10s/turn, no elimination).
   useEffect(() => {
     if (winners) return;
     const id = setInterval(() => setNow(Date.now()), 250);
@@ -77,7 +80,7 @@ export default function ClassicPage() {
   );
 
   const reset = () => {
-    setState(createInitialState(classic2P));
+    setState(createInitialState(mode === 'survival' ? hillSurvival : hillBlitz));
     setSelected(null);
     startedAt.current = Date.now();
     setNow(Date.now());
@@ -96,8 +99,8 @@ export default function ClassicPage() {
     <GameView
       vm={vm}
       remaining={remaining}
-      selected={selected ? [selected.row, selected.col] : null}
-      legalTargets={legalMoves.map((m) => [m.to.row, m.to.col])}
+      selected={selected ? [selected.row, selected.col] as [number, number] : null}
+      legalTargets={legalMoves.map((m) => [m.to.row, m.to.col] as [number, number])}
       isYourTurn={!winners}
       onSquareClick={handleSquare}
       onResign={() => router.push('/')}
@@ -117,5 +120,13 @@ export default function ClassicPage() {
           : null
       }
     />
+  );
+}
+
+export default function HillLocalPage() {
+  return (
+    <Suspense fallback={null}>
+      <HillLocalInner />
+    </Suspense>
   );
 }

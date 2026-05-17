@@ -111,11 +111,11 @@ export function Board({
         return (
           <div
             key={i}
-            className="absolute transition-[top,left] duration-200 ease-out"
+            className="absolute left-0 top-0 transition-transform duration-150 ease-out"
             style={{
-              top: p.pos[0] * cs + (cs - cs * 0.7) / 2,
-              left: p.pos[1] * cs + (cs - cs * 0.7) / 2,
-              width: cs * 0.7, height: cs * 0.7,
+              transform: `translate(${p.pos[1] * cs + (cs - cs * 0.7) / 2}px, ${p.pos[0] * cs + (cs - cs * 0.7) / 2}px)`,
+              width: cs * 0.7,
+              height: cs * 0.7,
             }}
           >
             <PieceShape
