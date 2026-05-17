@@ -4,7 +4,7 @@
 import type { GameState, Player } from '@/lib/engine/types';
 import type { Piece as UIPiece } from '@/lib/pieces';
 import type { ArenaTier, SkinId } from '@/lib/skins';
-import { boardToPieces } from '@/lib/multiplayer/adapt';
+import { boardToPieces, toTuple } from '@/lib/multiplayer/adapt';
 
 export interface PlayerMeta {
   player: Player;
@@ -45,16 +45,14 @@ export function toGameViewModel(
   const players: GameViewPlayer[] = meta.map((m) => ({
     ...m,
     isActive: state.winners === null && state.currentPlayer === m.player,
-    alive: state.alivePlayers.includes(m.player),
+    alive: (counts.get(m.player) ?? 0) > 0,
     pieceCount: counts.get(m.player) ?? 0,
   }));
 
   return {
-    size: state.config.boardSize as 8 | 10,
+    size: (state.config.boardSize === 10 ? 10 : 8) as 8 | 10,
     pieces: boardToPieces(state.board),
-    centerZone: state.config.centerZone.map(
-      (z) => [z.row, z.col] as [number, number],
-    ),
+    centerZone: state.config.centerZone.map(toTuple),
     players,
     currentPlayer: state.currentPlayer,
     round: state.round,

@@ -24,7 +24,7 @@ describe('toGameViewModel', () => {
     expect(vm.players.find((p) => p.player === 2)!.isActive).toBe(false);
   });
 
-  it('marks players with zero pieces as not alive and no winner active', () => {
+  it('derives alive from board pieces and suppresses isActive when winners is set', () => {
     const base = createInitialState(classic2P);
     const dead = {
       ...base,
@@ -35,5 +35,7 @@ describe('toGameViewModel', () => {
     const vm = toGameViewModel(dead, META);
     expect(vm.players.every((p) => p.pieceCount === 0)).toBe(true);
     expect(vm.players.find((p) => p.player === 1)!.isActive).toBe(false);
+    expect(vm.players.find((p) => p.player === 2)!.alive).toBe(false);
+    expect(vm.players.find((p) => p.player === 1)!.alive).toBe(false);
   });
 });
