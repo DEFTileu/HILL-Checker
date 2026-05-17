@@ -15,7 +15,7 @@ import {
 } from './GameOverOverlay';
 import { TURN_SECONDS } from '@/lib/engine/apply';
 import type { GameViewModel, GameViewPlayer } from '@/lib/game-ui-view';
-import { HILL } from '@/lib/tokens';
+import { HILL, type PlayerNum } from '@/lib/tokens';
 
 interface Props {
   vm: GameViewModel;
@@ -38,6 +38,12 @@ interface Props {
    * current player). 'multiplayer' keeps YOU to identify the human's slot.
    */
   mode?: 'hot-seat' | 'multiplayer';
+  /**
+   * Local player's seat. Rotates the board so this player's pieces sit at
+   * the bottom of their own view. Omit for hot-seat (no rotation — both
+   * players share one screen). Game state stays canonical.
+   */
+  localPlayer?: PlayerNum;
 }
 
 const clock = (s: number) =>
@@ -147,6 +153,7 @@ export function GameView({
   banner,
   roomCode,
   mode = 'multiplayer',
+  localPlayer,
 }: Props) {
   const hideYou = mode === 'hot-seat';
   const is4P = vm.players.length > 2;
@@ -258,6 +265,7 @@ export function GameView({
               highlighted={legalTargets}
               lastMove={lastMove}
               isYourTurn={isYourTurn}
+              localPlayer={localPlayer}
               onSquareClick={onSquareClick}
             />
           </div>

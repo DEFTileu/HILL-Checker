@@ -420,6 +420,7 @@ export default function RoomPage({
       <GameView
         vm={vm}
         mode="multiplayer"
+        localPlayer={mySlotPlayer ?? undefined}
         roomCode={roomId}
         remaining={remaining}
         selected={selected ? toTuple(selected) : null}

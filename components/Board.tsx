@@ -5,6 +5,7 @@ import { PieceShape } from './PieceShape';
 import { HILL, type PlayerNum } from '@/lib/tokens';
 import type { Piece } from '@/lib/pieces';
 import type { SkinId } from '@/lib/skins';
+import { displayToCanonical, canonicalToDisplay } from '@/lib/board-orientation';
 
 interface Props {
   size?: 8 | 10;
@@ -18,19 +19,30 @@ interface Props {
   /** When set, own pieces get hover:scale and cursor-pointer. */
   isYourTurn?: boolean;
   ownPlayer?: PlayerNum;
+  /**
+   * Local player's seat. When set, the board is rotated so this player's
+   * pieces sit at the bottom of the view (own perspective). Game state stays
+   * canonical — only rendering + click coords are transformed. Leave
+   * undefined for hot-seat / shared-screen (no rotation).
+   */
+  localPlayer?: PlayerNum;
   onSquareClick?: (r: number, c: number) => void;
 }
 
 export function Board({
   size = 8, pieces = [], centerZone = [], highlighted = [],
   selected = null, lastMove = null, cellSize = null,
-  skinForPlayer = {}, isYourTurn = false, ownPlayer,
+  skinForPlayer = {}, isYourTurn = false, ownPlayer, localPlayer,
   onSquareClick,
 }: Props) {
   const cs = cellSize ?? (size === 10 ? 33 : 41);
   const total = size * cs;
   const isHi = (r: number, c: number) => highlighted.some(([a, b]) => a === r && b === c);
   const isLast = (r: number, c: number) => lastMove?.some(([a, b]) => a === r && b === c) ?? false;
+  // Canonical (engine) -> display (pixel) cell, honoring the local player's
+  // viewpoint rotation. Identity when localPlayer is undefined.
+  const toDisp = (r: number, c: number) =>
+    canonicalToDisplay([r, c], localPlayer, size);
 
   return (
     <div
@@ -45,24 +57,28 @@ export function Board({
         style={{ gridTemplateColumns: `repeat(${size}, ${cs}px)`, gridTemplateRows: `repeat(${size}, ${cs}px)` }}
       >
         {Array.from({ length: size * size }).map((_, i) => {
+          // (r,c) is the display cell; map back to canonical so square
+          // colour, highlight lookup and clicks all stay in engine space.
           const r = Math.floor(i / size);
           const c = i % size;
-          const dark = (r + c) % 2 === 1;
+          const [cr, cc] = displayToCanonical([r, c], localPlayer, size);
+          const dark = (cr + cc) % 2 === 1;
           return (
             <Square
               key={i}
               dark={dark}
-              isLegalTarget={isHi(r, c)}
-              isLastMove={isLast(r, c)}
-              onClick={onSquareClick ? () => onSquareClick(r, c) : undefined}
+              isLegalTarget={isHi(cr, cc)}
+              isLastMove={isLast(cr, cc)}
+              onClick={onSquareClick ? () => onSquareClick(cr, cc) : undefined}
             />
           );
         })}
       </div>
 
       {centerZone.length > 0 && (() => {
-        const rs = centerZone.map(p => p[0]);
-        const csx = centerZone.map(p => p[1]);
+        const disp = centerZone.map(p => toDisp(p[0], p[1]));
+        const rs = disp.map(p => p[0]);
+        const csx = disp.map(p => p[1]);
         const top = Math.min(...rs) * cs;
         const left = Math.min(...csx) * cs;
         const h = (Math.max(...rs) - Math.min(...rs) + 1) * cs;
@@ -82,38 +98,45 @@ export function Board({
         );
       })()}
 
-      {highlighted.map(([r, c], i) => (
-        <div
-          key={`h${i}`}
-          className="absolute rounded-full pointer-events-none bg-[var(--hill-accent)]"
-          style={{
-            top: r * cs + cs * 0.35, left: c * cs + cs * 0.35,
-            width: cs * 0.3, height: cs * 0.3,
-            opacity: 0.6,
-            boxShadow: `0 0 8px ${HILL.accent}`,
-          }}
-        />
-      ))}
+      {highlighted.map(([r, c], i) => {
+        const [dr, dc] = toDisp(r, c);
+        return (
+          <div
+            key={`h${i}`}
+            className="absolute rounded-full pointer-events-none bg-[var(--hill-accent)]"
+            style={{
+              top: dr * cs + cs * 0.35, left: dc * cs + cs * 0.35,
+              width: cs * 0.3, height: cs * 0.3,
+              opacity: 0.6,
+              boxShadow: `0 0 8px ${HILL.accent}`,
+            }}
+          />
+        );
+      })}
 
-      {selected && (
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            top: selected[0] * cs, left: selected[1] * cs,
-            width: cs, height: cs,
-            boxShadow: `inset 0 0 0 2px ${HILL.accent}`,
-          }}
-        />
-      )}
+      {selected && (() => {
+        const [sr, sc] = toDisp(selected[0], selected[1]);
+        return (
+          <div
+            className="absolute pointer-events-none"
+            style={{
+              top: sr * cs, left: sc * cs,
+              width: cs, height: cs,
+              boxShadow: `inset 0 0 0 2px ${HILL.accent}`,
+            }}
+          />
+        );
+      })()}
 
       {pieces.map((p, i) => {
         const isOwn = ownPlayer !== undefined && p.player === ownPlayer;
+        const [pr, pc] = toDisp(p.pos[0], p.pos[1]);
         return (
           <div
             key={p.id ?? `${p.player}-${p.pos[0]}-${p.pos[1]}-${i}`}
             className="absolute left-0 top-0 transition-transform duration-150 ease-out pointer-events-none"
             style={{
-              transform: `translate(${p.pos[1] * cs + (cs - cs * 0.7) / 2}px, ${p.pos[0] * cs + (cs - cs * 0.7) / 2}px)`,
+              transform: `translate(${pc * cs + (cs - cs * 0.7) / 2}px, ${pr * cs + (cs - cs * 0.7) / 2}px)`,
               width: cs * 0.7,
               height: cs * 0.7,
             }}
