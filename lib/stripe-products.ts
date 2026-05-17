@@ -7,17 +7,17 @@ export const PREMIUM_SKIN_PRICES: Record<
   { priceId: string; displayName: string; priceUsd: number }
 > = {
   neon_glow: {
-    priceId: 'price_REPLACE_WITH_NEON_GLOW_ID',
+    priceId: 'price_1TY6boAiPmEWqw9JHoLfL1zl',
     displayName: 'Neon Glow',
     priceUsd: 1.99,
   },
   galaxy: {
-    priceId: 'price_REPLACE_WITH_GALAXY_ID',
+    priceId: 'price_1TY6c8AiPmEWqw9JKhIXlhbU',
     displayName: 'Galaxy',
     priceUsd: 2.99,
   },
   royal_gold: {
-    priceId: 'price_REPLACE_WITH_ROYAL_GOLD_ID',
+    priceId: 'price_1TY6cMAiPmEWqw9Jn7HDGjrm',
     displayName: 'Royal Gold',
     priceUsd: 4.99,
   },
