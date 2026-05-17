@@ -429,6 +429,7 @@ export default function RoomPage({
                 winners: go.winners,
                 matchDuration: dur,
                 roundCount: state.round,
+                mode: state.config.mode,
                 onPlayAgain: () => router.push('/r/new'),
                 onShare: () => {
                   void navigator.clipboard.writeText(window.location.href);

@@ -25,15 +25,12 @@ export function DeathOverlay({ round, eliminatedPlayer, onSpectate, onLeave, onC
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col px-6 pt-14 pb-6 lg:px-12 lg:pt-0 lg:pb-12 animate-[hill-fadein_.35s_ease] lg:backdrop-blur-md"
-      style={{
-        background: 'radial-gradient(120% 80% at 50% 30%, rgba(255,59,48,0.28), rgba(10,10,10,0.85) 60%, rgba(10,10,10,0.96))',
-      }}
+      className="fixed inset-0 z-50 flex flex-col px-6 pt-14 pb-6 lg:px-12 lg:pt-0 lg:pb-12 lg:justify-center animate-[hill-fadein_.35s_ease] bg-[radial-gradient(120%_80%_at_50%_30%,rgba(255,59,48,0.28),rgba(10,10,10,0.85)_60%,rgba(10,10,10,0.96))] lg:bg-red-900/30 lg:bg-none lg:backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-labelledby="death-headline"
     >
-      <div className="flex-1 flex flex-col items-center justify-center gap-0">
+      <div className="flex-1 lg:flex-none flex flex-col items-center justify-center gap-0">
         {eliminatedPlayer && (
           <div
             className="inline-flex items-center gap-2 px-3 py-1.5 pl-2 rounded-full font-mono text-[11px] lg:text-xs font-bold tracking-[0.18em] lg:tracking-[0.24em] text-[var(--hill-danger)]"
@@ -46,16 +43,15 @@ export function DeathOverlay({ round, eliminatedPlayer, onSpectate, onLeave, onC
 
         <h1
           id="death-headline"
-          className="font-extrabold text-center leading-[0.9] tracking-[-0.04em] lg:tracking-[-0.05em] mt-6 lg:mt-8 text-[var(--hill-danger)] animate-[hill-rise_.5s_ease]"
+          className="font-extrabold text-center leading-[0.9] tracking-[-0.04em] lg:tracking-[-0.05em] mt-6 lg:mt-8 text-[var(--hill-danger)] animate-[hill-rise_.5s_ease] text-7xl md:text-9xl lg:text-[180px] xl:text-[220px]"
           style={{
-            fontSize: 'clamp(72px, 12vw, 220px)',
             textShadow: '0 0 32px rgba(255,59,48,0.5)',
           }}
         >
           YOU<br/>DIED.
         </h1>
 
-        <div className="mt-4 lg:mt-6 text-sm lg:text-lg font-mono tracking-[0.08em] lg:tracking-[0.18em] text-white/70">
+        <div className="mt-4 lg:mt-6 text-sm lg:text-xl font-mono tracking-[0.08em] lg:tracking-[0.18em] text-white/70">
           ELIMINATED · ROUND {round}
         </div>
 
@@ -67,11 +63,11 @@ export function DeathOverlay({ round, eliminatedPlayer, onSpectate, onLeave, onC
         </div>
       </div>
 
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:gap-3.5 lg:justify-center lg:max-w-[480px] lg:mx-auto lg:w-full">
-        <CTAButton variant="primary" onClick={onSpectate}>
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:gap-4 lg:justify-center lg:max-w-xl lg:mx-auto lg:mt-12 lg:static lg:w-full">
+        <CTAButton variant="primary" onClick={onSpectate} className="lg:w-auto lg:px-8">
           👁 Spectate
         </CTAButton>
-        <CTAButton variant="secondary" onClick={onLeave}>
+        <CTAButton variant="secondary" onClick={onLeave} className="lg:w-auto lg:px-8">
           ← Leave Room
         </CTAButton>
       </div>

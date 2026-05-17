@@ -112,6 +112,7 @@ function HillLocalInner() {
               winners: ov.winners,
               matchDuration: dur,
               roundCount: state.round,
+              mode: state.config.mode,
               onPlayAgain: reset,
               onShare: () => {
                 void navigator.clipboard.writeText(window.location.href);
