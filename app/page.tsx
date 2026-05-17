@@ -5,9 +5,11 @@ import { CTAButton } from '@/components/CTAButton';
 import { WelcomeChip } from '@/components/WelcomeChip';
 import { Board } from '@/components/Board';
 import { makeHillPieces, HILL_CENTER_ZONE } from '@/lib/pieces';
+import { useAuth } from '@/lib/auth';
 import type { SkinId, PlayerNum } from '@/lib/skins';
 
-const MOCK_SKINS: Record<PlayerNum, SkinId> = { 1: 'silver', 2: 'gold', 3: 'bronze', 4: 'master' };
+// Decorative skin palette for the brand hero board (not user data).
+const DECOR_SKINS: Record<PlayerNum, SkinId> = { 1: 'silver', 2: 'gold', 3: 'bronze', 4: 'master' };
 
 const STEPS = [
   { n: '01', t: 'Spawn a room',     b: 'Pick Blitz or Survival, share the 4-letter code or scan the QR. No download, no account needed to play.' },
@@ -16,15 +18,23 @@ const STEPS = [
 ] as const;
 
 export default function Landing() {
-  // In a real app, pull from session. WelcomeChip in TopNav already shows desktop signed-in state.
-  const signedIn = true;
+  const { user, profile } = useAuth();
+  // Only a real linked account counts as "signed in"; anonymous guests
+  // still have a profile but no chip on the landing screen.
+  const signedIn = !!profile && !!user && !user.is_anonymous;
 
   return (
     <div className="relative">
       {/* Mobile-only welcome chip — desktop uses TopNav. */}
-      {signedIn && (
+      {signedIn && profile && (
         <div className="lg:hidden absolute top-16 right-4 z-[2]">
-          <WelcomeChip user={{ name: 'Aida K.', tier: 'Gold', skin: 'gold' }}/>
+          <WelcomeChip
+            user={{
+              name: profile.displayName,
+              tier: profile.arenaTier,
+              skin: profile.selectedSkin,
+            }}
+          />
         </div>
       )}
 
@@ -83,17 +93,10 @@ export default function Landing() {
 
           {/* Desktop hero board */}
           <div className="hidden lg:block lg:shrink-0 relative pb-4">
-            <div
-              className="absolute -top-3.5 -right-3.5 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full font-mono text-[10px] font-bold tracking-[0.18em] text-[var(--hill-accent)] z-[2]"
-              style={{ background: 'rgba(0,0,0,0.6)', border: '1px solid rgba(191,255,0,0.4)' }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--hill-danger)] animate-hill-pulse" />
-              247 LIVE ROOMS
-            </div>
             <Board size={10} cellSize={28}
               pieces={makeHillPieces()}
               centerZone={HILL_CENTER_ZONE}
-              skinForPlayer={MOCK_SKINS}
+              skinForPlayer={DECOR_SKINS}
             />
           </div>
         </div>

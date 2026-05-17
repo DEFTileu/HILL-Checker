@@ -4,25 +4,52 @@ import { useState } from 'react';
 import { GoogleG } from '@/components/GoogleG';
 import { PieceShape } from '@/components/PieceShape';
 import { SkinCard } from '@/components/SkinCard';
+import { useAuth } from '@/lib/auth';
 import { TIER_META } from '@/lib/tiers';
-import { SKINS, skinUnlocked, UNLOCK_WINS, type SkinId, type TierId } from '@/lib/skins';
+import { SKINS, skinUnlocked, UNLOCK_WINS, type SkinId } from '@/lib/skins';
 
-const DEMO = {
-  signedIn: true,
-  email: 'aida.k@gmail.com',
-  name: 'Aida K.',
-  tier: 'Gold' as TierId,
-  initialSkin: 'gold' as SkinId,
-  stats: {
-    wins: 88, games: 160, wr: 55, streak: 7, faveMode: 'BLITZ',
-    longestStreak: '7 wins', bestRound: '12 pieces on hill',
-    captured: '1,204', hillHeld: '14m 22s', kingsCrowned: '32', eliminated: '47 (29%)',
-  },
-};
+// Stats the profile/schema does not (yet) track. Shown as honest placeholders
+// rather than fabricated numbers.
+const NA = '—';
 
 export default function ProfilePage() {
-  const [skin, setSkin] = useState<SkinId>(DEMO.initialSkin);
-  const tierColor = TIER_META[DEMO.tier].color;
+  const {
+    user,
+    profile,
+    loading,
+    changeName,
+    selectSkin,
+    resetAccount,
+    linkGoogle,
+    logout,
+  } = useAuth();
+  const [skinSel, setSkinSel] = useState<SkinId | null>(null);
+
+  if (loading || !profile) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center font-mono text-[12px] tracking-[0.18em] text-[var(--hill-muted)]">
+        LOADING…
+      </div>
+    );
+  }
+
+  const signedIn = !!user && !user.is_anonymous;
+  const tier = profile.arenaTier;
+  const tierColor = TIER_META[tier].color;
+  const skin: SkinId = skinSel ?? profile.selectedSkin;
+  const avatarLetter = profile.displayName.charAt(0).toUpperCase() || 'H';
+
+  const wins = profile.totalWins;
+  const games = profile.totalGames;
+  const winRate = games > 0 ? Math.round((wins / games) * 100) : 0;
+  const unlockedCount = (Object.keys(SKINS) as SkinId[]).filter((sk) =>
+    skinUnlocked(sk, tier),
+  ).length;
+
+  const pickSkin = (sk: SkinId) => {
+    setSkinSel(sk);
+    void selectSkin(sk);
+  };
 
   const Identity = (
     <div>
@@ -33,15 +60,15 @@ export default function ProfilePage() {
           style={{ background: `conic-gradient(${tierColor} 0deg, ${tierColor} 220deg, var(--hill-border) 220deg, var(--hill-border) 360deg)` }}
         >
           <div className="w-full h-full rounded-full bg-gradient-to-br from-[#2a2a2a] to-[#0a0a0a] flex items-center justify-center text-[84px] font-black border-2 border-[var(--hill-bg)]">
-            A
+            {avatarLetter}
           </div>
         </div>
         {/* Mobile avatar */}
         <div className="lg:hidden w-full h-full rounded-full bg-gradient-to-br from-[#2a2a2a] to-[#0a0a0a] flex items-center justify-center text-[44px] font-extrabold border-2 border-[var(--hill-border)]">
-          A
+          {avatarLetter}
         </div>
 
-        {DEMO.signedIn && (
+        {signedIn && (
           <div className="absolute -top-0.5 -right-0.5 lg:top-1.5 lg:right-1.5 w-6 h-6 lg:w-10 lg:h-10 rounded-full bg-[var(--hill-bg)] p-0.5 lg:p-1 border-[1.5px] border-[var(--hill-border)] flex items-center justify-center">
             <GoogleG size={16} className="lg:hidden"/>
             <GoogleG size={26} className="hidden lg:block"/>
@@ -56,7 +83,7 @@ export default function ProfilePage() {
         {/* Mobile tier chip directly under avatar (desktop has its own under-avatar treatment) */}
         <div className="lg:hidden absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1.5 pl-2.5 rounded-full bg-[var(--hill-bg)] flex items-center gap-1.5 text-[11px] font-extrabold tracking-[0.12em] whitespace-nowrap"
              style={{ border: `1.5px solid ${tierColor}60`, color: tierColor }}>
-          <span>{TIER_META[DEMO.tier].icon}</span> {DEMO.tier.toUpperCase()} · TIER III
+          <span>{TIER_META[tier].icon}</span> {tier.toUpperCase()}
         </div>
       </div>
 
@@ -65,27 +92,33 @@ export default function ProfilePage() {
           className="inline-flex items-center gap-2 px-4 py-2 pl-3 rounded-full bg-[var(--hill-surface)] font-extrabold text-[13px] tracking-[0.14em]"
           style={{ border: `1.5px solid ${tierColor}50`, color: tierColor }}
         >
-          <span className="text-base">{TIER_META[DEMO.tier].icon}</span>
-          {DEMO.tier.toUpperCase()} · TIER III
+          <span className="text-base">{TIER_META[tier].icon}</span>
+          {tier.toUpperCase()}
         </div>
       </div>
 
-      {DEMO.signedIn ? (
+      {signedIn ? (
         <div className="mt-9 lg:mt-6">
           <div className="flex items-center gap-2.5 lg:gap-3 px-3.5 lg:px-4 py-2.5 lg:py-3.5 rounded-[10px] lg:rounded-xl border" style={{ background: 'rgba(191,255,0,0.04)', borderColor: 'rgba(191,255,0,0.2)' }}>
             <GoogleG size={16} className="lg:hidden"/>
             <GoogleG size={20} className="hidden lg:block"/>
             <div className="flex-1 min-w-0">
               <div className="text-[10px] text-[var(--hill-muted)] tracking-[0.14em] font-bold">SIGNED IN AS</div>
-              <div className="text-[13px] lg:text-sm font-semibold truncate">{DEMO.email}</div>
+              <div className="text-[13px] lg:text-sm font-semibold truncate">{profile.email ?? 'Linked account'}</div>
             </div>
-            <button className="text-[11px] lg:text-xs text-[var(--hill-muted)] font-semibold tracking-[0.04em] hover:text-[var(--hill-text)]">
+            <button
+              onClick={() => void logout()}
+              className="text-[11px] lg:text-xs text-[var(--hill-muted)] font-semibold tracking-[0.04em] hover:text-[var(--hill-text)]"
+            >
               Sign out
             </button>
           </div>
         </div>
       ) : (
-        <button className="mt-9 w-full h-14 rounded-xl bg-[var(--hill-text)] text-[var(--hill-bg)] text-[15px] font-bold inline-flex items-center justify-center gap-2.5 transition lg:hover:brightness-95 lg:hover:-translate-y-0.5">
+        <button
+          onClick={() => void linkGoogle()}
+          className="mt-9 w-full h-14 rounded-xl bg-[var(--hill-text)] text-[var(--hill-bg)] text-[15px] font-bold inline-flex items-center justify-center gap-2.5 transition lg:hover:brightness-95 lg:hover:-translate-y-0.5"
+        >
           <GoogleG size={20}/> Sign in with Google
         </button>
       )}
@@ -97,10 +130,13 @@ export default function ProfilePage() {
       <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em] mb-2 lg:mb-2.5">DISPLAY NAME</div>
       <div className="flex items-center px-4 lg:px-5 py-3.5 lg:py-4 bg-[var(--hill-surface)] border border-[var(--hill-borderHi)] rounded-xl text-[17px] lg:text-[22px] font-bold lg:font-bold tracking-[-0.01em] transition focus-within:border-[var(--hill-accent)] focus-within:shadow-[0_0_0_3px_rgba(191,255,0,0.15)]">
         <input
-          defaultValue={DEMO.name}
+          defaultValue={profile.displayName}
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== profile.displayName) void changeName(v);
+          }}
           className="flex-1 bg-transparent outline-none text-[var(--hill-text)]"
         />
-        <span className="font-mono text-[11px] text-[var(--hill-dim)] tracking-[0.08em] ml-2 shrink-0">SAVED ✓</span>
       </div>
     </div>
   );
@@ -108,12 +144,12 @@ export default function ProfilePage() {
   const Stats = (
     <div className="grid grid-cols-3 lg:grid-cols-5 bg-[var(--hill-surface)] border border-[var(--hill-border)] rounded-[14px] overflow-hidden">
       {[
-        ['TOTAL WINS', String(DEMO.stats.wins)],
-        ['GAMES',      String(DEMO.stats.games)],
-        ['WIN RATE',   `${DEMO.stats.wr}%`],
+        ['TOTAL WINS', String(wins)],
+        ['GAMES',      String(games)],
+        ['WIN RATE',   `${winRate}%`],
         // Hidden on mobile — only the 3-column subset shows there.
-        ['STREAK',     String(DEMO.stats.streak)],
-        ['FAVE MODE',  DEMO.stats.faveMode],
+        ['STREAK',     NA],
+        ['FAVE MODE',  NA],
       ].map(([k, v], i, arr) => (
         <div
           key={k}
@@ -136,11 +172,11 @@ export default function ProfilePage() {
   const Progress = (
     <div>
       <div className="flex justify-between font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.08em] lg:tracking-[0.1em] mb-1.5 lg:mb-2">
-        <span style={{ color: tierColor }}>{DEMO.tier.toUpperCase()} · TIER III</span>
-        <span>1,996 / 2,236 ELO · 240 to <span className="text-[var(--hill-master)]">MASTER</span></span>
+        <span style={{ color: tierColor }}>{tier.toUpperCase()}</span>
+        <span>{profile.elo} ELO</span>
       </div>
       <div className="h-1.5 lg:h-2.5 rounded-sm bg-[var(--hill-surface)] overflow-hidden border border-[var(--hill-border)]">
-        <div className="h-full" style={{ width: '62%', background: `linear-gradient(90deg, ${tierColor}, var(--hill-accent))`, boxShadow: '0 0 12px var(--hill-accent)' }}/>
+        <div className="h-full" style={{ width: '0%', background: `linear-gradient(90deg, ${tierColor}, var(--hill-accent))` }}/>
       </div>
     </div>
   );
@@ -150,15 +186,15 @@ export default function ProfilePage() {
       <div className="flex justify-between items-center mb-2 lg:mb-3">
         <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]">PIECE SKIN</div>
         <div className="font-mono text-[10px] text-[var(--hill-dim)] tracking-[0.08em] lg:tracking-[0.1em]">
-          SHAPE STAYS THE SAME · 4 OF 5 UNLOCKED
+          SHAPE STAYS THE SAME · {unlockedCount} OF {Object.keys(SKINS).length} UNLOCKED
         </div>
       </div>
       {/* Mobile: horizontal scrolling; desktop: 5-up grid */}
       <div className="hill-scroll flex gap-2 overflow-x-auto px-5 -mx-5 lg:grid lg:grid-cols-5 lg:gap-3 lg:px-0 lg:mx-0">
         {(Object.keys(SKINS) as SkinId[]).map(sk => {
-          const unlocked = skinUnlocked(sk, DEMO.tier);
-          const tier = SKINS[sk].tier;
-          const unlockText = unlocked ? null : `Unlock at ${tier} · ${UNLOCK_WINS[tier]} wins`;
+          const unlocked = skinUnlocked(sk, tier);
+          const skTier = SKINS[sk].tier;
+          const unlockText = unlocked ? null : `Unlock at ${skTier} · ${UNLOCK_WINS[skTier]} wins`;
           return (
             <SkinCard
               key={sk}
@@ -167,7 +203,7 @@ export default function ProfilePage() {
               selected={skin === sk}
               locked={!unlocked}
               unlockText={unlockText}
-              onClick={() => unlocked && setSkin(sk)}
+              onClick={() => unlocked && pickSkin(sk)}
             />
           );
         })}
@@ -183,12 +219,12 @@ export default function ProfilePage() {
       <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em] mb-2.5">DETAILED STATS</div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5 lg:gap-2.5">
         {[
-          ['Longest streak',      DEMO.stats.longestStreak],
-          ['Best round (Blitz)',  DEMO.stats.bestRound],
-          ['Pieces captured',     DEMO.stats.captured],
-          ['Hill seconds held',   DEMO.stats.hillHeld],
-          ['Kings crowned',       DEMO.stats.kingsCrowned],
-          ['Times eliminated',    DEMO.stats.eliminated],
+          ['Longest streak',      NA],
+          ['Best round (Blitz)',  NA],
+          ['Pieces captured',     NA],
+          ['Hill seconds held',   NA],
+          ['Kings crowned',       NA],
+          ['Times eliminated',    NA],
         ].map(([k, v]) => (
           <div key={k} className="flex justify-between items-center px-3.5 lg:px-4 py-3 lg:py-3.5 bg-[var(--hill-surface)] border border-[var(--hill-border)] rounded-[10px] text-[13px] lg:text-sm">
             <span className="text-[var(--hill-muted)]">{k}</span>
@@ -209,7 +245,6 @@ export default function ProfilePage() {
         <span className="font-mono text-[11px] font-bold text-[var(--hill-accent)] tracking-[0.24em]">· ME ·</span>
         <h1 className="font-display text-[72px] m-0 tracking-[-0.04em]">Profile</h1>
         <span className="flex-1"/>
-        <div className="font-mono text-[11px] text-[var(--hill-dim)] tracking-[0.14em]">SAVED · <span className="text-[var(--hill-accent)]">✓</span></div>
       </div>
 
       {/* Layout: single column on mobile, 1fr/2fr split on desktop */}
@@ -224,8 +259,20 @@ export default function ProfilePage() {
           {Skins}
           {DetailedStats}
           <div className="flex lg:justify-end">
-            <button className="h-12 lg:h-10 w-full lg:w-auto lg:px-4 rounded-xl bg-transparent text-[var(--hill-danger)] border text-sm lg:text-xs font-bold tracking-[0.04em] lg:tracking-[0.08em] transition lg:hover:border-[var(--hill-danger)]"
-                    style={{ borderColor: 'rgba(255,59,48,0.25)' }}>
+            <button
+              onClick={() => {
+                if (
+                  typeof window !== 'undefined' &&
+                  window.confirm(
+                    'Reset account? This clears your wins, ELO, and skin.',
+                  )
+                ) {
+                  void resetAccount();
+                }
+              }}
+              className="h-12 lg:h-10 w-full lg:w-auto lg:px-4 rounded-xl bg-transparent text-[var(--hill-danger)] border text-sm lg:text-xs font-bold tracking-[0.04em] lg:tracking-[0.08em] transition lg:hover:border-[var(--hill-danger)]"
+              style={{ borderColor: 'rgba(255,59,48,0.25)' }}
+            >
               RESET ACCOUNT
             </button>
           </div>

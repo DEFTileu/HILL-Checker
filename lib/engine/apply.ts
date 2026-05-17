@@ -4,7 +4,6 @@ import type {
   Coord,
   GameConfig,
   GameState,
-  Move,
   Piece,
   Player,
   SkipTurn,

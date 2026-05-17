@@ -5,12 +5,15 @@ import { useRouter } from 'next/navigation';
 import { GoogleG } from '@/components/GoogleG';
 import { Board } from '@/components/Board';
 import { makeHillPieces, HILL_CENTER_ZONE } from '@/lib/pieces';
+import { useAuth } from '@/lib/auth';
 import type { PlayerNum, SkinId } from '@/lib/skins';
 
-const MOCK_SKINS: Record<PlayerNum, SkinId> = { 1: 'silver', 2: 'gold', 3: 'bronze', 4: 'master' };
+// Decorative skin palette for the blurred backdrop board (not user data).
+const DECOR_SKINS: Record<PlayerNum, SkinId> = { 1: 'silver', 2: 'gold', 3: 'bronze', 4: 'master' };
 
 export default function LoginPage() {
   const router = useRouter();
+  const { linkGoogle } = useAuth();
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -19,7 +22,7 @@ export default function LoginPage() {
         <Board size={10} cellSize={56}
           pieces={makeHillPieces()}
           centerZone={HILL_CENTER_ZONE}
-          skinForPlayer={MOCK_SKINS}
+          skinForPlayer={DECOR_SKINS}
         />
       </div>
       <div className="hidden lg:block absolute inset-0" style={{ background: 'radial-gradient(60% 50% at 50% 45%, rgba(10,10,10,0.4), var(--hill-bg) 80%)' }}/>
@@ -52,6 +55,7 @@ export default function LoginPage() {
           </div>
 
           <button
+            onClick={() => void linkGoogle()}
             className="mt-7 w-full h-[60px] rounded-xl bg-[var(--hill-text)] text-[var(--hill-bg)] font-bold text-base tracking-[-0.01em] inline-flex items-center justify-center gap-3 transition lg:hover:brightness-95 lg:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--hill-bg)]"
           >
             <GoogleG size={22}/> Continue with Google

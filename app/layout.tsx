@@ -45,9 +45,6 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-// Hard-coded session for demo; swap for real auth in production.
-const DEMO_USER = { name: 'Aida K.', tier: 'Gold' as const, skin: 'gold' as const };
-
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -59,7 +56,7 @@ export default function RootLayout({
       <body className="min-h-full bg-hill-bg text-hill-text">
         <AuthProvider>
           {/* Desktop sticky header. Renders only on lg+ via `hidden lg:flex` inside. */}
-          <TopNav user={DEMO_USER} />
+          <TopNav />
           {/*
             Bottom safe area for mobile so BottomNav doesn't sit on top of content.
             On desktop the bottom nav is hidden so we zero out the padding via lg:.

@@ -4,18 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { GoogleG } from './GoogleG';
 import { WelcomeChip } from './WelcomeChip';
-import type { SkinId, TierId } from '@/lib/skins';
-
-interface UserSummary {
-  name: string;
-  tier: TierId;
-  skin: SkinId;
-}
-
-interface Props {
-  user?: UserSummary | null;
-  onSignIn?: () => void;
-}
+import { useAuth } from '@/lib/auth';
 
 const TABS = [
   { id: 'hill', href: '/',            label: 'HILL' },
@@ -34,9 +23,13 @@ function activeFromPath(pathname: string): typeof TABS[number]['id'] {
  * Mount above page content in app/layout.tsx; coexists with BottomNav since
  * BottomNav is `lg:hidden` and TopNav is `hidden lg:flex`.
  */
-export function TopNav({ user, onSignIn }: Props) {
+export function TopNav() {
   const pathname = usePathname() ?? '/';
   const active = activeFromPath(pathname);
+  const { user, profile, loading, linkGoogle } = useAuth();
+  // "Signed in" = a real linked account. Anonymous guests still have a
+  // profile, but the Google entry point should stay visible for them.
+  const signedIn = !!profile && !!user && !user.is_anonymous;
 
   return (
     <header
@@ -79,11 +72,17 @@ export function TopNav({ user, onSignIn }: Props) {
         </nav>
 
         <div className="min-w-[240px] flex items-center justify-end gap-3">
-          {user ? (
-            <WelcomeChip user={user} />
+          {loading ? null : signedIn && profile ? (
+            <WelcomeChip
+              user={{
+                name: profile.displayName,
+                tier: profile.arenaTier,
+                skin: profile.selectedSkin,
+              }}
+            />
           ) : (
             <button
-              onClick={onSignIn}
+              onClick={() => void linkGoogle()}
               className="h-10 px-4 rounded-[10px] bg-transparent border-[1.5px] border-[var(--hill-borderHi)] text-[var(--hill-text)] text-[13px] font-bold inline-flex items-center gap-2 transition lg:hover:border-[var(--hill-accent)] lg:hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--hill-bg)]"
             >
               <GoogleG size={16}/> Sign in with Google

@@ -302,6 +302,10 @@ export default function RoomPage({
   useEffect(() => {
     if (!state || winners || !isHostRef.current) return;
     if (state.turnDeadline && now >= state.turnDeadline) {
+      // Intentional: host-authority timer expiry must advance game state from
+      // this effect (external clock is the trigger). setSelected is already
+      // deferred via queueMicrotask below.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       applyAction({ type: 'skip' }, true);
       // Defer setSelected to avoid synchronous setState inside effect body.
       queueMicrotask(() => setSelected(null));
