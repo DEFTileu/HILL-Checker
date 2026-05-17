@@ -17,7 +17,7 @@ Browser-native blitz checkers with two modes:
 - **hill-survival** — same as blitz but max 20 rounds; only the last survivor
   wins (if the cap is reached, anyone in the center wins, else draw).
 - A **round** = one full cycle of all currently-alive players moving once.
-- **Turn timer**: 10s per turn. Expiry skips the turn (no elimination).
+- **Turn timer**: 15s per turn. Expiry skips the turn (no elimination).
 - **Elimination** only when a player has zero pieces.
 
 Multiplayer is trust-the-client for MVP: each client runs the pure engine

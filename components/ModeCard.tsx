@@ -73,7 +73,7 @@ export function ModeCard({ mode, selected, ...rest }: Props) {
 
       <div className="hidden lg:grid lg:grid-cols-3 gap-3.5 mt-6 pt-5 border-t border-[var(--hill-border)]">
         {([
-          ['CLOCK',   isBlitz ? '10s / turn' : '15s / turn'],
+          ['CLOCK',   '15s / turn'],
           ['ROUNDS',  isBlitz ? '7' : 'No limit'],
           ['PLAYERS', '2–4'],
         ] as const).map(([k, v]) => (
@@ -85,7 +85,7 @@ export function ModeCard({ mode, selected, ...rest }: Props) {
       </div>
 
       <div className="flex gap-3.5 mt-3.5 pt-3.5 border-t border-[var(--hill-border)] text-[11px] font-mono text-[var(--hill-muted)] tracking-[0.04em] lg:hidden">
-        <span>{isBlitz ? '10s / TURN' : '15s / TURN'}</span>
+        <span>15s / TURN</span>
         <span className="text-[var(--hill-border)]">·</span>
         <span>{isBlitz ? '7 ROUNDS' : 'NO LIMIT'}</span>
         <span className="text-[var(--hill-border)]">·</span>

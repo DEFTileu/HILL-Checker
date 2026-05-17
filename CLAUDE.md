@@ -41,7 +41,7 @@ A round = one full cycle of all currently-alive players moving once.
 Eliminated players are removed from the cycle.
 
 ## Turn timer
-10 seconds per turn. If expired without move, skip (do not eliminate).
+15 seconds per turn. If expired without move, skip (do not eliminate).
 
 ## Elimination
 Only when player has 0 pieces. No legal moves = skip turn, don't lose.
