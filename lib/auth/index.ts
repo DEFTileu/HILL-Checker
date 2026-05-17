@@ -46,14 +46,42 @@ export async function signInWithGoogle(): Promise<void> {
       : undefined;
 
   const { data } = await sb.auth.getUser();
+
+  // Anonymous user → try to link Google so wins/ELO/skin carry over.
   if (data.user?.is_anonymous) {
     const { error } = await sb.auth.linkIdentity({
       provider: 'google',
       options: { redirectTo },
     });
-    if (error) throw error;
-    return;
+    // Success: the browser is redirecting to Google's consent screen.
+    if (!error) return;
+
+    // This Google account is already linked to a different (orphaned)
+    // anonymous user — Supabase refuses to link it twice. Fall back to a
+    // plain sign-in into that existing account; the current anonymous
+    // guest progress is discarded (it was never claimed anyway).
+    if (
+      error.code === 'identity_already_exists' ||
+      error.message?.includes('already linked')
+    ) {
+      console.warn(
+        '[auth] identity already exists — falling back to plain OAuth; ' +
+          'anonymous progress will be discarded',
+      );
+      await sb.auth.signOut();
+      const { error: oauthError } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo },
+      });
+      if (oauthError) throw oauthError;
+      return;
+    }
+
+    // Any other linking error is unexpected — surface it.
+    throw error;
   }
+
+  // Not signed in, or already a non-anonymous account → plain OAuth.
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo },
