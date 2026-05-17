@@ -29,12 +29,26 @@ function activeFromPath(pathname: string): TabId {
   return 'hill';
 }
 
+// Hide the tab bar on actual gameplay screens (board is on-screen) so it
+// doesn't sit over the game. The pre-game wizard (/play/hill/mode, /style)
+// keeps the nav — its CTA layout reserves the 88px nav strip — and the
+// transient /r/new room-creator isn't gameplay either.
+function isGameplay(pathname: string): boolean {
+  if (pathname === '/play/classic') return true;
+  if (pathname === '/play/hill/local') return true;
+  // /r/<roomId> is the lobby+game; /r/new is just the creator redirect.
+  if (pathname.startsWith('/r/') && pathname !== '/r/new') return true;
+  return false;
+}
+
 /**
  * Mobile tab bar — `lg:hidden` so it disappears in favor of TopNav on desktop.
  */
 export function BottomNav() {
-  const pathname = usePathname();
-  const active = activeFromPath(pathname ?? '/');
+  const pathname = usePathname() ?? '/';
+  const active = activeFromPath(pathname);
+
+  if (isGameplay(pathname)) return null;
 
   return (
     <nav
