@@ -89,6 +89,13 @@ export default function Landing() {
                 <span className="text-[var(--hill-text)] font-bold">JOIN&nbsp;ROOM&nbsp;→</span>
               </Link>
             </div>
+
+            <Link
+              href="/rules"
+              className="inline-block mt-5 text-sm text-[var(--hill-muted)] hover:text-[var(--hill-text)] tracking-[0.04em]"
+            >
+              New here? Read the rules →
+            </Link>
           </div>
 
           {/* Desktop hero board */}
