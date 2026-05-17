@@ -2,6 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TopBar } from '@/components/TopBar';
 import { ModeCard } from '@/components/ModeCard';
 import { CTAButton } from '@/components/CTAButton';
@@ -12,7 +13,17 @@ export default function ModeSelectPage() {
 
   return (
     <>
-      <TopBar/>
+      <TopBar
+        right={
+          <Link
+            href="/rules"
+            aria-label="How to play"
+            className="w-9 h-9 rounded-[10px] bg-[var(--hill-surface)] border border-[var(--hill-border)] inline-flex items-center justify-center text-[var(--hill-muted)] text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)]"
+          >
+            ?
+          </Link>
+        }
+      />
       <div className="mx-auto w-full max-w-[1280px] px-5 lg:px-12 pt-5 lg:pt-14 pb-28 lg:pb-14 flex flex-col min-h-[calc(100vh-64px)]">
         <div className="lg:flex lg:items-baseline lg:gap-4 mb-3">
           <span className="font-mono text-[11px] font-bold text-[var(--hill-accent)] tracking-[0.24em] lg:tracking-[0.32em]">
