@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { LeaderboardTable } from '@/components/LeaderboardTable';
+import { EloInfoModal } from '@/components/EloInfoModal';
 import {
   getLeaderboard,
   getModeCountsByUser,
@@ -30,6 +31,7 @@ export default function LeaderboardPage() {
   const [modeCounts, setModeCounts] = useState<Map<string, ModeCounts>>(new Map());
   const [active, setActive] = useState<Filter>('Global');
   const [query, setQuery] = useState('');
+  const [infoOpen, setInfoOpen] = useState(false);
   // Client-only platform read. useSyncExternalStore gives a stable server
   // snapshot (false) so there's no hydration mismatch and no setState-in-
   // effect — the keydown effect below still derives its own local `mac`.
@@ -125,9 +127,24 @@ export default function LeaderboardPage() {
         </span>
       </div>
       <div className="lg:flex lg:items-baseline lg:justify-between lg:gap-8 mb-6 lg:mb-7">
-        <h1 className="font-display text-[56px] lg:text-[96px] m-0 tracking-[-0.05em] mt-1.5 lg:mt-1">
-          TOP 100
-        </h1>
+        <div className="flex items-center gap-3 lg:gap-4">
+          <h1 className="font-display text-[56px] lg:text-[96px] m-0 tracking-[-0.05em] mt-1.5 lg:mt-1">
+            TOP 100
+          </h1>
+          <button
+            type="button"
+            onClick={() => setInfoOpen(true)}
+            aria-label="How rating works"
+            title="How rating works"
+            className="shrink-0 flex h-7 w-7 lg:h-8 lg:w-8 items-center justify-center rounded-full border border-[var(--hill-border)] text-[var(--hill-muted)] transition lg:hover:text-[var(--hill-accent)] lg:hover:border-[var(--hill-accent)]"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5" />
+              <path d="M12 8h.01" />
+            </svg>
+          </button>
+        </div>
         <div className="hidden lg:block pb-[18px] font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.14em]">
           SEASON ENDS IN <span className="text-[var(--hill-text)] font-bold">12d 04h</span>
         </div>
@@ -220,6 +237,8 @@ export default function LeaderboardPage() {
           </div>
         </>
       )}
+
+      <EloInfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
     </div>
   );
 }

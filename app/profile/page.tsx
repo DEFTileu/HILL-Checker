@@ -6,7 +6,8 @@ import { PieceShape } from '@/components/PieceShape';
 import { SkinCard } from '@/components/SkinCard';
 import { useAuth } from '@/lib/auth';
 import { TIER_META } from '@/lib/tiers';
-import { getTierProgress } from '@/lib/arena';
+import { getTierProgress, TIER_ELO_THRESHOLDS } from '@/lib/arena';
+import { EloInfoModal } from '@/components/EloInfoModal';
 import {
   SKINS,
   PREMIUM_SKIN_IDS,
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [skinSel, setSkinSel] = useState<SkinId | null>(null);
   const [buying, setBuying] = useState<string | null>(null);
   const [buyErr, setBuyErr] = useState<string | null>(null);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   if (loading || !profile) {
     return (
@@ -196,17 +198,20 @@ export default function ProfilePage() {
   );
 
   const prog = getTierProgress(profile.elo);
+  const nextFloor = prog.nextTier ? TIER_ELO_THRESHOLDS[prog.nextTier] : null;
   const Progress = (
     <div>
       <div className="flex justify-between font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.08em] lg:tracking-[0.1em] mb-1.5 lg:mb-2">
         <span style={{ color: tierColor }}>
-          {prog.currentTier.toUpperCase()} · {profile.elo} ELO
+          {prog.nextTier && nextFloor !== null
+            ? `${prog.currentTier.toUpperCase()} · ${profile.elo} / ${nextFloor} ELO`
+            : `CHAMPION · MAX TIER · ${profile.elo} ELO`}
         </span>
-        <span>
-          {prog.nextTier
-            ? `${prog.nextTier.toUpperCase()} · ${prog.eloToNext} to go`
-            : 'MAX TIER'}
-        </span>
+        {prog.nextTier && (
+          <span>
+            {prog.nextTier.toUpperCase()} in {prog.eloToNext}
+          </span>
+        )}
       </div>
       <div className="h-1.5 lg:h-2.5 rounded-sm bg-[var(--hill-surface)] overflow-hidden border border-[var(--hill-border)]">
         <div
@@ -217,6 +222,13 @@ export default function ProfilePage() {
           }}
         />
       </div>
+      <button
+        type="button"
+        onClick={() => setInfoOpen(true)}
+        className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] tracking-[0.12em] text-[var(--hill-muted)] transition lg:hover:text-[var(--hill-accent)]"
+      >
+        HOW DOES ELO WORK? →
+      </button>
     </div>
   );
 
@@ -384,6 +396,8 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      <EloInfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
     </div>
   );
 }
