@@ -15,6 +15,7 @@ export interface RoomHandlers {
   onSyncRequest: () => void;
   onSyncResponse: (state: GameState) => void;
   onModeChange: (mode: RoomMode) => void;
+  onGameResult: (eloChanges: Record<string, number>) => void;
 }
 
 /** Create (but do NOT subscribe) the room channel. Caller subscribes. */
@@ -67,6 +68,11 @@ export function subscribeToRoom(
   ch.on('broadcast', { event: 'player_forfeit' }, ({ payload }) =>
     handlers.onForfeit((payload as { player: Player }).player),
   );
+  ch.on('broadcast', { event: 'game:result' }, ({ payload }) =>
+    handlers.onGameResult(
+      (payload as { eloChanges: Record<string, number> }).eloChanges,
+    ),
+  );
   return ch;
 }
 
@@ -87,6 +93,18 @@ export function broadcastSyncResponse(ch: RealtimeChannel, state: GameState) {
 }
 export function broadcastModeChange(ch: RealtimeChannel, mode: RoomMode) {
   return ch.send({ type: 'broadcast', event: 'room:mode', payload: { mode } });
+}
+// Host → everyone: per-user ELO deltas after the recorded game, so non-host
+// clients can render the same "+24 ELO" cards on the game-over overlay.
+export function broadcastGameResult(
+  ch: RealtimeChannel,
+  eloChanges: Record<string, number>,
+) {
+  return ch.send({
+    type: 'broadcast',
+    event: 'game:result',
+    payload: { eloChanges },
+  });
 }
 export function broadcastForfeit(ch: RealtimeChannel, player: Player) {
   return ch.send({

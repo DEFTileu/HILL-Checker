@@ -1,22 +1,74 @@
 import type { ArenaTier } from '@/lib/skins';
-import { WINS_TO_UNLOCK, TIER_RANK } from '@/lib/skins';
 
-// Tiers ordered low → high. Thresholds come from the single source of truth
-// in lib/skins.ts (Bronze 0, Silver 5, Gold 25, Master 75, Champion 150) —
-// this is what the Phase 3 acceptance criterion ("total_wins=25 → Gold")
-// expects.
-const TIERS_ASC = (Object.keys(TIER_RANK) as ArenaTier[]).sort(
-  (a, b) => TIER_RANK[a] - TIER_RANK[b],
-);
+// Single source of truth for ELO → tier mapping. Used by profiles.ts,
+// leaderboard.ts, the profile page progress bar, and skin unlocks.
+export const TIER_ELO_THRESHOLDS: Record<ArenaTier, number> = {
+  Bronze: 1000,
+  Silver: 1200,
+  Gold: 1400,
+  Master: 1600,
+  Champion: 1800,
+};
 
-export function getArenaTier(wins: number): ArenaTier {
-  let tier: ArenaTier = 'Bronze';
-  for (const t of TIERS_ASC) {
-    if (wins >= WINS_TO_UNLOCK[t]) tier = t;
-  }
-  return tier;
+const TIERS_ASC: ArenaTier[] = [
+  'Bronze',
+  'Silver',
+  'Gold',
+  'Master',
+  'Champion',
+];
+
+export function getArenaTier(elo: number): ArenaTier {
+  if (elo >= TIER_ELO_THRESHOLDS.Champion) return 'Champion';
+  if (elo >= TIER_ELO_THRESHOLDS.Master) return 'Master';
+  if (elo >= TIER_ELO_THRESHOLDS.Gold) return 'Gold';
+  if (elo >= TIER_ELO_THRESHOLDS.Silver) return 'Silver';
+  return 'Bronze';
 }
 
-// ELO has no column in the MVP schema — derived for display only (profile +
-// leaderboard). Single source of truth; profiles.ts and leaderboard.ts use it.
-export const deriveElo = (wins: number): number => 1000 + wins * 20;
+export interface TierProgress {
+  currentTier: ArenaTier;
+  nextTier: ArenaTier | null;
+  currentElo: number;
+  progressPct: number;
+  eloToNext: number | null;
+}
+
+export function getTierProgress(elo: number): TierProgress {
+  let currentTier: ArenaTier = 'Bronze';
+  for (const t of TIERS_ASC) {
+    if (elo >= TIER_ELO_THRESHOLDS[t]) currentTier = t;
+  }
+  const currentIdx = TIERS_ASC.indexOf(currentTier);
+  const nextTier =
+    currentIdx < TIERS_ASC.length - 1 ? TIERS_ASC[currentIdx + 1] : null;
+
+  if (!nextTier) {
+    return {
+      currentTier,
+      nextTier: null,
+      currentElo: elo,
+      progressPct: 100,
+      eloToNext: null,
+    };
+  }
+
+  const currentEloFloor = TIER_ELO_THRESHOLDS[currentTier];
+  const nextEloFloor = TIER_ELO_THRESHOLDS[nextTier];
+  const progressPct = Math.min(
+    100,
+    Math.max(
+      0,
+      Math.round(
+        ((elo - currentEloFloor) / (nextEloFloor - currentEloFloor)) * 100,
+      ),
+    ),
+  );
+  return {
+    currentTier,
+    nextTier,
+    currentElo: elo,
+    progressPct,
+    eloToNext: nextEloFloor - elo,
+  };
+}

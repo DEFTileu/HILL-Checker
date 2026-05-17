@@ -1,4 +1,9 @@
 import { getServiceClient, getUserFromRequest } from '@/lib/multiplayer/server';
+import {
+  calculateGameEloUpdates,
+  STARTING_ELO,
+  type GameParticipant,
+} from '@/lib/elo';
 
 interface GamePlayerIn {
   userId: string;
@@ -79,25 +84,54 @@ export async function POST(req: Request) {
     return Response.json({ error: gpErr.message, gameId: game.id }, { status: 500 });
   }
 
-  // Every participant — winners AND losers — gets total_games += 1; only
-  // winners get total_wins += 1. The profile row is guaranteed to exist
-  // (ensured above), so there is no silent-skip path: a loser can never be
-  // dropped from the leaderboard here.
-  for (const p of body.players) {
+  // Real ELO: fetch every participant's CURRENT rating up front (pre-game),
+  // then compute all pairwise updates atomically from those values so update
+  // order can't skew results. The profile row is guaranteed to exist (ensured
+  // above), so no participant is silently skipped.
+  const prePerUser: Record<
+    string,
+    { elo: number; total_wins: number; total_games: number }
+  > = {};
+  for (const id of userIds) {
     const { data: prof } = await sb
       .from('profiles')
-      .select('total_wins,total_games')
-      .eq('id', p.userId)
+      .select('elo,total_wins,total_games')
+      .eq('id', id)
       .maybeSingle();
-    const base = prof ?? { total_wins: 0, total_games: 0 };
+    prePerUser[id] = {
+      elo: prof?.elo ?? STARTING_ELO,
+      total_wins: prof?.total_wins ?? 0,
+      total_games: prof?.total_games ?? 0,
+    };
+  }
+
+  // De-dupe to one GameParticipant per user (a user holds one rating even if
+  // they somehow appear in two slots).
+  const participants: GameParticipant[] = userIds.map((id) => ({
+    userId: id,
+    elo: prePerUser[id].elo,
+    isWinner: winnerSet.has(id),
+  }));
+  const newElos = calculateGameEloUpdates(participants);
+
+  const eloChanges: Record<
+    string,
+    { before: number; after: number; delta: number }
+  > = {};
+  for (const id of userIds) {
+    const before = prePerUser[id].elo;
+    const after = newElos[id];
+    eloChanges[id] = { before, after, delta: after - before };
     await sb
       .from('profiles')
       .update({
-        total_games: base.total_games + 1,
-        total_wins: base.total_wins + (winnerSet.has(p.userId) ? 1 : 0),
+        elo: after,
+        total_games: prePerUser[id].total_games + 1,
+        total_wins:
+          prePerUser[id].total_wins + (winnerSet.has(id) ? 1 : 0),
       })
-      .eq('id', p.userId);
+      .eq('id', id);
   }
 
-  return Response.json({ ok: true, gameId: game.id });
+  return Response.json({ ok: true, gameId: game.id, eloChanges });
 }

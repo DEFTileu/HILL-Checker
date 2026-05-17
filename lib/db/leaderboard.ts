@@ -1,5 +1,6 @@
 'use client';
-import { getArenaTier, deriveElo } from '@/lib/arena';
+import { getArenaTier } from '@/lib/arena';
+import { STARTING_ELO } from '@/lib/elo';
 import type { LeaderboardRow } from '@/components/Leaderboard';
 import type { LeaderboardRowData } from '@/components/LeaderboardRow';
 
@@ -8,6 +9,7 @@ export interface LeaderboardEntry {
   displayName: string;
   totalWins: number;
   totalGames: number;
+  elo: number;
 }
 
 interface ProfileRow {
@@ -15,19 +17,20 @@ interface ProfileRow {
   display_name: string;
   total_wins: number;
   total_games: number;
+  elo: number | null;
 }
 
-// CoC-style ranking: most wins first; ties broken by win-rate, then by games
-// played (more active outranks when otherwise tied), then by id for a stable
-// deterministic order. Pure + exported so it's unit-tested without a DB.
-// Safe to apply after a `total_wins`-DESC + LIMIT 100 fetch: the cutoff is on
-// the primary key (wins), so tiebreakers only reorder within equal-wins groups
-// and never exclude an eligible higher-ranked row.
+// ELO-ranked: highest ELO first; ties broken by wins, then win-rate, then
+// games played, then id for a stable deterministic order. Pure + exported so
+// it's unit-tested without a DB. Safe to apply after an `elo`-DESC + LIMIT 100
+// fetch: the cutoff is on the sort key (elo), so tiebreakers only reorder
+// within equal-ELO groups and never exclude an eligible higher-ranked row.
 export function sortLeaderboard(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   const rate = (e: LeaderboardEntry) =>
     e.totalGames > 0 ? e.totalWins / e.totalGames : 0;
   return [...entries].sort(
     (a, b) =>
+      b.elo - a.elo ||
       b.totalWins - a.totalWins ||
       rate(b) - rate(a) ||
       b.totalGames - a.totalGames ||
@@ -42,7 +45,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const { getSupabase } = await import('@/lib/multiplayer/client');
 
   const sb = getSupabase();
-  const select = 'id, display_name, total_wins, total_games';
+  const select = 'id, display_name, total_wins, total_games, elo';
   const toEntries = (rows: ProfileRow[]) =>
     sortLeaderboard(
       rows.map((r) => ({
@@ -50,6 +53,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
         displayName: r.display_name,
         totalWins: r.total_wins,
         totalGames: r.total_games,
+        elo: r.elo ?? STARTING_ELO,
       })),
     );
 
@@ -63,7 +67,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     .select(select)
     .eq('is_anonymous', false)
     .gt('total_games', 0)
-    .order('total_wins', { ascending: false })
+    .order('elo', { ascending: false })
     .limit(100);
   if (error) return [];
   if (data && data.length > 0) return toEntries(data as ProfileRow[]);
@@ -76,7 +80,7 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
     .from('profiles')
     .select(select)
     .eq('is_anonymous', false)
-    .order('total_wins', { ascending: false })
+    .order('elo', { ascending: false })
     .limit(100);
   if (allErr || !all) return [];
   return toEntries(all as ProfileRow[]);
@@ -90,12 +94,12 @@ export function toLeaderboardRows(
   return entries.map((en, i) => ({
     rank: i + 1,
     name: en.displayName,
-    tier: getArenaTier(en.totalWins),
+    tier: getArenaTier(en.elo),
     wins: en.totalWins,
     winRate: en.totalGames
       ? Math.round((en.totalWins / en.totalGames) * 100)
       : 0,
-    elo: deriveElo(en.totalWins),
+    elo: en.elo,
     isYou: !!currentUserId && en.id === currentUserId,
   }));
 }
@@ -110,13 +114,13 @@ export function toLeaderboardTableRows(
   return entries.map((en, i) => ({
     rank: i + 1,
     name: en.displayName,
-    tier: getArenaTier(en.totalWins),
+    tier: getArenaTier(en.elo),
     wins: en.totalWins,
     games: en.totalGames,
     wr: en.totalGames
       ? Math.round((en.totalWins / en.totalGames) * 100)
       : 0,
-    elo: deriveElo(en.totalWins),
+    elo: en.elo,
     isYou: !!currentUserId && en.id === currentUserId,
   }));
 }

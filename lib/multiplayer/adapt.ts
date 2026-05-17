@@ -63,16 +63,28 @@ export function assignSlots(
   return map;
 }
 
+// eloDeltas: userId → ELO delta from the recorded game. Unknown until the
+// host's recordGame round-trips (and broadcasts) — 0 in the meantime so the
+// card shows a neutral value rather than a fabricated one.
 export function winnersToGameOver(
   winners: Player[],
   slots: SlotMap,
+  eloDeltas?: Record<string, number>,
 ): { kind: GameOverKind; winners: Winner[] } {
   const kind: GameOverKind =
     winners.length === 0 ? 'none' : winners.length === 1 ? 'solo' : 'joint';
   const list: Winner[] = winners.flatMap((p) => {
     const s = slots[p];
     return s
-      ? [{ player: p, name: s.displayName, tier: s.tier, skin: s.skin, eloDelta: 20 }]
+      ? [
+          {
+            player: p,
+            name: s.displayName,
+            tier: s.tier,
+            skin: s.skin,
+            eloDelta: eloDeltas?.[s.userId] ?? 0,
+          },
+        ]
       : [];
   });
   return { kind, winners: list };

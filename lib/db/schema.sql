@@ -11,14 +11,17 @@ create table if not exists profiles (
   display_name text not null,
   total_wins   int  not null default 0,
   total_games  int  not null default 0,
+  elo          int  not null default 1000,       -- real Elo rating (K=32)
   skin_id      text not null default 'bronze',  -- bronze|silver|gold|master|champion
   is_anonymous boolean not null default true,   -- false once linked (Google)
   created_at   timestamptz not null default now()
 );
 
--- Backfill for existing databases (idempotent — column may already exist).
+-- Backfill for existing databases (idempotent — columns may already exist).
 alter table profiles
   add column if not exists is_anonymous boolean not null default true;
+alter table profiles
+  add column if not exists elo int not null default 1000;
 
 create table if not exists games (
   id          uuid primary key default gen_random_uuid(),
@@ -52,12 +55,13 @@ create table if not exists rooms (
 -- ─────────────────────────────────────────────────────────────────────────────
 
 create or replace view leaderboard as
-  select id, display_name, total_wins, total_games, skin_id,
+  select id, display_name, total_wins, total_games, skin_id, elo,
          (total_wins::float / nullif(total_games, 0)) as win_rate
   from profiles
   where total_games > 0
     and is_anonymous = false   -- authorized (Google-linked) users only
-  order by total_wins desc,
+  order by elo desc,
+           total_wins desc,
            (total_wins::float / nullif(total_games, 0)) desc,
            total_games desc
   limit 100;

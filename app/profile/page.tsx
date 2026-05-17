@@ -6,7 +6,8 @@ import { PieceShape } from '@/components/PieceShape';
 import { SkinCard } from '@/components/SkinCard';
 import { useAuth } from '@/lib/auth';
 import { TIER_META } from '@/lib/tiers';
-import { SKINS, skinUnlocked, UNLOCK_WINS, type SkinId } from '@/lib/skins';
+import { getTierProgress } from '@/lib/arena';
+import { SKINS, skinUnlocked, SKIN_REQUIREMENTS, type SkinId } from '@/lib/skins';
 
 // Stats the profile/schema does not (yet) track. Shown as honest placeholders
 // rather than fabricated numbers.
@@ -169,14 +170,27 @@ export default function ProfilePage() {
     </div>
   );
 
+  const prog = getTierProgress(profile.elo);
   const Progress = (
     <div>
       <div className="flex justify-between font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.08em] lg:tracking-[0.1em] mb-1.5 lg:mb-2">
-        <span style={{ color: tierColor }}>{tier.toUpperCase()}</span>
-        <span>{profile.elo} ELO</span>
+        <span style={{ color: tierColor }}>
+          {prog.currentTier.toUpperCase()} · {profile.elo} ELO
+        </span>
+        <span>
+          {prog.nextTier
+            ? `${prog.nextTier.toUpperCase()} · ${prog.eloToNext} to go`
+            : 'MAX TIER'}
+        </span>
       </div>
       <div className="h-1.5 lg:h-2.5 rounded-sm bg-[var(--hill-surface)] overflow-hidden border border-[var(--hill-border)]">
-        <div className="h-full" style={{ width: '0%', background: `linear-gradient(90deg, ${tierColor}, var(--hill-accent))` }}/>
+        <div
+          className="h-full transition-[width] duration-700"
+          style={{
+            width: `${prog.progressPct}%`,
+            background: `linear-gradient(90deg, ${tierColor}, var(--hill-accent))`,
+          }}
+        />
       </div>
     </div>
   );
@@ -194,7 +208,9 @@ export default function ProfilePage() {
         {(Object.keys(SKINS) as SkinId[]).map(sk => {
           const unlocked = skinUnlocked(sk, tier);
           const skTier = SKINS[sk].tier;
-          const unlockText = unlocked ? null : `Unlock at ${skTier} · ${UNLOCK_WINS[skTier]} wins`;
+          const unlockText = unlocked
+            ? null
+            : `Unlock at ${skTier} · ${SKIN_REQUIREMENTS[sk]} ELO`;
           return (
             <SkinCard
               key={sk}

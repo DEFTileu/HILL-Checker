@@ -40,3 +40,20 @@ export const UNLOCK_WINS = WINS_TO_UNLOCK;
 
 export const skinUnlocked = (skin: SkinId, userTier: ArenaTier) =>
   TIER_RANK[SKINS[skin].tier] <= TIER_RANK[userTier];
+
+// ── ELO-based skin unlocks ───────────────────────────────────────────────────
+// Each skin unlocks at its tier's ELO floor (mirrors TIER_ELO_THRESHOLDS in
+// lib/arena.ts — kept here to avoid a circular import).
+export const SKIN_REQUIREMENTS: Record<SkinId, number> = {
+  bronze: 1000,
+  silver: 1200,
+  gold: 1400,
+  master: 1600,
+  champion: 1800,
+};
+
+export function getUnlockedSkins(elo: number): SkinId[] {
+  return (Object.keys(SKIN_REQUIREMENTS) as SkinId[]).filter(
+    (s) => elo >= SKIN_REQUIREMENTS[s],
+  );
+}

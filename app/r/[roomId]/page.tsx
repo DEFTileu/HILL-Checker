@@ -24,6 +24,7 @@ import {
   broadcastSyncResponse,
   broadcastModeChange,
   broadcastForfeit,
+  broadcastGameResult,
   trackPresence,
 } from '@/lib/multiplayer/channel';
 import {
@@ -63,6 +64,11 @@ export default function RoomPage({
   const [state, setState] = useState<GameState | null>(null);
   const [slots, setSlots] = useState<SlotMap>({});
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
+  // Per-user ELO delta after the recorded game. Host fills it from
+  // recordGame()'s response; everyone else from the broadcast.
+  const [eloDeltas, setEloDeltas] = useState<Record<string, number> | null>(
+    null,
+  );
   const [now, setNow] = useState(() => Date.now());
   // startedAtMs mirrors the startedAt ref for render-safe reads (elapsed timer display).
   const [startedAtMs, setStartedAtMs] = useState(0);
@@ -212,6 +218,7 @@ export default function RoomPage({
           startedAt.current = ts;
           setStartedAtMs(ts);
           recorded.current = false;
+          setEloDeltas(null);
           elimRound.current = {};
           prevAlive.current = [...s.alivePlayers];
           setSlots(sl);
@@ -227,6 +234,7 @@ export default function RoomPage({
           if (!stateRef.current) setState(s);
         },
         onModeChange: (m) => setMode(m),
+        onGameResult: (m) => setEloDeltas(m),
       });
       chRef.current = ch;
 
@@ -293,6 +301,12 @@ export default function RoomPage({
         mode: state.config.mode,
         winners: winnerIds,
         players,
+      }).then((changes) => {
+        if (!changes) return;
+        const deltas: Record<string, number> = {};
+        for (const [uid, c] of Object.entries(changes)) deltas[uid] = c.delta;
+        setEloDeltas(deltas);
+        if (chRef.current) broadcastGameResult(chRef.current, deltas);
       });
     }
   }, [state, winners, roomId]);
@@ -389,7 +403,9 @@ export default function RoomPage({
 
   // GAME view
   if (state && room.status === 'playing') {
-    const go = winners ? winnersToGameOver(winners, slots) : null;
+    const go = winners
+      ? winnersToGameOver(winners, slots, eloDeltas ?? undefined)
+      : null;
     const elapsed = Math.max(0, Math.floor((now - startedAtMs) / 1000));
     const dur = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
 
@@ -476,6 +492,7 @@ export default function RoomPage({
     startedAt.current = ts;
     setStartedAtMs(ts);
     recorded.current = false;
+    setEloDeltas(null);
     elimRound.current = {};
     prevAlive.current = [...initial.alivePlayers];
     setSlots(sl);

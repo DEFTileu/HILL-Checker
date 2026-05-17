@@ -2,7 +2,8 @@
 
 import type { User } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/multiplayer/client';
-import { getArenaTier, deriveElo } from '@/lib/arena';
+import { getArenaTier } from '@/lib/arena';
+import { STARTING_ELO } from '@/lib/elo';
 import type { Profile } from '@/lib/game-ui';
 import type { SkinId } from '@/lib/skins';
 
@@ -13,6 +14,7 @@ interface ProfileRow {
   display_name: string;
   total_wins: number;
   total_games: number;
+  elo: number;
   skin_id: string;
   is_anonymous: boolean;
   created_at: string;
@@ -34,9 +36,10 @@ function toProfile(row: ProfileRow, authUser: User | null): Profile {
         : undefined,
     totalWins: row.total_wins,
     totalGames: row.total_games,
-    arenaTier: getArenaTier(row.total_wins),
+    // Pre-migration rows have no elo column → fall back to the 1000 floor.
+    arenaTier: getArenaTier(row.elo ?? STARTING_ELO),
     selectedSkin: (row.skin_id as SkinId) ?? 'bronze',
-    elo: deriveElo(row.total_wins),
+    elo: row.elo ?? STARTING_ELO,
   };
 }
 

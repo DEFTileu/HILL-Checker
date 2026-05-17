@@ -1,15 +1,19 @@
 // components/ArenaBadge.tsx
 import type { TierId } from '@/lib/skins';
 import { TIER_META } from '@/lib/tiers';
+import { getArenaTier } from '@/lib/arena';
 
 interface Props {
   tier?: TierId;
+  /** When provided, the tier is derived from ELO and overrides `tier`. */
+  elo?: number;
   size?: 'sm' | 'md';
   label?: boolean;
 }
 
-export function ArenaBadge({ tier = 'Bronze', size = 'sm', label = true }: Props) {
-  const m = TIER_META[tier];
+export function ArenaBadge({ tier = 'Bronze', elo, size = 'sm', label = true }: Props) {
+  const resolved: TierId = elo != null ? getArenaTier(elo) : tier;
+  const m = TIER_META[resolved];
   const sm = size === 'sm';
   return (
     <span
