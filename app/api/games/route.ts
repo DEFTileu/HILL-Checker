@@ -32,6 +32,27 @@ export async function POST(req: Request) {
 
   const sb = getServiceClient();
 
+  // CASE C fix — the recording path must be self-sufficient. We cannot assume
+  // every participant's client already ran ensureProfile() (uninstalled
+  // handle_new_user trigger, in-flight/failed insert, remote anon joiner).
+  // game_players.user_id has an FK to profiles(id): a missing row would
+  // FK-fail the whole batch (500, nothing recorded) and the stats loop below
+  // would silently skip that player — so losers never reach the leaderboard.
+  // Ensure a row exists for every participant first, using the service client
+  // (bypasses RLS). ignoreDuplicates => ON CONFLICT DO NOTHING, so existing
+  // display names and stats are never clobbered.
+  const userIds = [...new Set(body.players.map((p) => p.userId))];
+  const { error: ensureErr } = await sb.from('profiles').upsert(
+    userIds.map((id) => ({
+      id,
+      display_name: 'Player_' + Math.random().toString(16).slice(2, 6).padEnd(4, '0'),
+    })),
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+  if (ensureErr) {
+    return Response.json({ error: ensureErr.message }, { status: 500 });
+  }
+
   const { data: game, error: gErr } = await sb
     .from('games')
     .insert({
@@ -58,18 +79,22 @@ export async function POST(req: Request) {
     return Response.json({ error: gpErr.message, gameId: game.id }, { status: 500 });
   }
 
+  // Every participant — winners AND losers — gets total_games += 1; only
+  // winners get total_wins += 1. The profile row is guaranteed to exist
+  // (ensured above), so there is no silent-skip path: a loser can never be
+  // dropped from the leaderboard here.
   for (const p of body.players) {
     const { data: prof } = await sb
       .from('profiles')
       .select('total_wins,total_games')
       .eq('id', p.userId)
       .maybeSingle();
-    if (!prof) continue;
+    const base = prof ?? { total_wins: 0, total_games: 0 };
     await sb
       .from('profiles')
       .update({
-        total_games: prof.total_games + 1,
-        total_wins: prof.total_wins + (winnerSet.has(p.userId) ? 1 : 0),
+        total_games: base.total_games + 1,
+        total_wins: base.total_wins + (winnerSet.has(p.userId) ? 1 : 0),
       })
       .eq('id', p.userId);
   }

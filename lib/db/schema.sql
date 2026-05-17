@@ -51,7 +51,9 @@ create or replace view leaderboard as
          (total_wins::float / nullif(total_games, 0)) as win_rate
   from profiles
   where total_games > 0
-  order by total_wins desc
+  order by total_wins desc,
+           (total_wins::float / nullif(total_games, 0)) desc,
+           total_games desc
   limit 100;
 
 -- ─────────────────────────────────────────────────────────────────────────────
