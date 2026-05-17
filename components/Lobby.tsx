@@ -21,21 +21,36 @@ export function Lobby({
                           roomCode, mode, players, isHost, onStart, onCopyLink, onShare, onChangeMode, onBack,
                       }: LobbyProps) {
     const filled = players.filter(p => !('empty' in p)).length;
+    // Slot count is mode-driven: Classic seats 2, Hill seats 4. `players`
+    // already has exactly `cfg.players.length` entries (one per slot).
+    const max = players.length;
+    const isClassic = mode === 'classic';
     const ready = filled >= 2;
     const roomUrl =
         typeof window !== 'undefined'
             ? `${window.location.origin}/r/${roomCode}`
             : `/r/${roomCode}`;
 
+    const modeIcon =
+        mode === 'classic' ? '♟' : mode === 'survival' ? '💀' : '⚡';
+    const modeTitle =
+        mode === 'classic' ? 'CLASSIC' : mode === 'survival' ? 'SURVIVAL' : 'BLITZ';
+    const modeSub =
+        mode === 'classic'
+            ? 'Capture all · 8×8 · 2P'
+            : mode === 'survival'
+              ? 'Last alive wins · ~5-7 min'
+              : '7 rounds · ~3 min';
+
     const ModeCard = (
         <div className="flex items-center gap-3 px-3.5 lg:px-4 py-3 lg:py-3.5 rounded-xl border border-[var(--hill-border)] bg-[var(--hill-surface)]">
-            <span className="text-lg lg:text-[22px]">{mode === 'survival' ? '💀' : '⚡'}</span>
+            <span className="text-lg lg:text-[22px]">{modeIcon}</span>
             <div className="flex-1">
                 <div className="font-display text-[14px] lg:text-[22px] tracking-[-0.02em]">
-                    {mode === 'survival' ? 'SURVIVAL' : 'BLITZ'}
+                    {modeTitle}
                 </div>
                 <div className="mt-0.5 text-[11px] lg:text-xs text-[var(--hill-muted)]">
-                    {mode === 'survival' ? 'Last alive wins · ~5-7 min' : '7 rounds · ~3 min'}
+                    {modeSub}
                 </div>
             </div>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hill-muted)" strokeWidth="2" strokeLinecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
@@ -66,7 +81,7 @@ export function Lobby({
                     <button onClick={onBack} className="text-[13px] text-[var(--hill-muted)] hover:text-[var(--hill-text)] tracking-[0.04em]">← Leave room</button>
                     <span className="flex-1"/>
                     <span className="font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.14em]">
-                        LIVE LOBBY · <span className="text-[var(--hill-accent)]">● {filled}/4</span>
+                        LIVE LOBBY · <span className="text-[var(--hill-accent)]">● {filled}/{max}</span>
                     </span>
                 </div>
 
@@ -95,7 +110,7 @@ export function Lobby({
                         <div className="mt-6 lg:mt-7">
                             <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em] mb-2 lg:mb-2.5">MODE · LOCKED</div>
                             {ModeCard}
-                            {isHost && (
+                            {isHost && !isClassic && (
                                 <button onClick={onChangeMode} className="mt-2 text-[11px] font-semibold tracking-wide text-[var(--hill-muted)] lg:hover:text-[var(--hill-text)]">
                                     ← change mode
                                 </button>
@@ -119,7 +134,7 @@ export function Lobby({
                         <div className="flex items-baseline justify-between mb-3 lg:mb-4">
                             <h2 className="font-display text-2xl lg:text-[44px] m-0 tracking-[-0.04em]">Players</h2>
                             <div className="font-mono text-[11px] lg:text-[13px] text-[var(--hill-muted)] tracking-[0.1em]">
-                                <span className="text-[var(--hill-text)] font-bold">{filled}</span> · OF · 4
+                                <span className="text-[var(--hill-text)] font-bold">{filled}</span> · OF · {max}
                             </div>
                         </div>
 

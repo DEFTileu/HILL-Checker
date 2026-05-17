@@ -2,7 +2,7 @@
 import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { hillBlitz, hillSurvival } from '@/lib/engine/presets';
+import { hillBlitz, hillSurvival, classic2P } from '@/lib/engine/presets';
 import { applyMove, createInitialState } from '@/lib/engine/apply';
 import { getLegalMoves } from '@/lib/engine/rules';
 import { checkWinners } from '@/lib/engine/endgame';
@@ -38,9 +38,13 @@ import { GameView } from '@/components/GameView';
 import { toGameViewModel, type PlayerMeta } from '@/lib/game-ui-view';
 import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
-const PRESET = { 'hill-blitz': hillBlitz, 'hill-survival': hillSurvival } as const;
+const PRESET: Record<RoomMode, typeof hillBlitz> = {
+  'hill-blitz': hillBlitz,
+  'hill-survival': hillSurvival,
+  'classic-2p': classic2P,
+};
 const toGameMode = (m: RoomMode): GameMode =>
-  m === 'hill-survival' ? 'survival' : 'blitz';
+  m === 'classic-2p' ? 'classic' : m === 'hill-survival' ? 'survival' : 'blitz';
 
 export default function RoomPage({
   params,
@@ -483,6 +487,9 @@ export default function RoomPage({
 
   const cycleMode = () => {
     if (!isHost || !chRef.current) return;
+    // Classic has a single ruleset — no in-lobby toggle (the button is
+    // hidden too). Only Hill flips between blitz/survival.
+    if (mode === 'classic-2p') return;
     const next: RoomMode =
       mode === 'hill-blitz' ? 'hill-survival' : 'hill-blitz';
     setMode(next);
