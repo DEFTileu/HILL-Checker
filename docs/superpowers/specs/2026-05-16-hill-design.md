@@ -36,7 +36,7 @@ The product ships with **3 modes**, all served by a single configurable engine.
 | King promotion | Reach opposite edge | Enter center 2×2 ("the Hill") | Same as Blitz |
 | Win condition | Capture all opponent pieces | At end of 7 rounds: **all players** with ≥1 piece in center are winners (1–4 winners possible). Or last survivor before timer. | Last survivor. If 20-round cap reached: same as Blitz center-check (anyone in center wins; draw if nobody). |
 | Round limit | None (999) | 7 | 20 (safety cap) |
-| Turn timer | 10s (skip on expiry, not loss) | 10s (skip on expiry, not loss) | 10s (skip on expiry, not loss) |
+| Turn timer | 15s (skip on expiry, not loss) | 15s (skip on expiry, not loss) | 15s (skip on expiry, not loss) |
 | No-legal-moves | Skip turn (not loss) | Skip turn (not loss) | Skip turn (not loss) |
 | Elimination | 0 pieces = loss | 0 pieces = drama "YOU DIED" overlay → spectate or leave | Same as Blitz |
 
@@ -150,7 +150,7 @@ Examples:
 6. **Hill play style select** — Step 2/2: "How do you want to play?" → Hot-seat (this device) or Multiplayer (create room)
 7. **Room lobby** (`/r/[id]`) — Room code huge in mono, Copy/Share buttons, **MODE · LOCKED** display (no toggle), 4 slots in 2×2 grid, Start button sticky bottom (host only, ≥2 players required)
 8. **Classic 2P game** (`/play/classic`) — 8×8 board, turn indicator, back button
-9. **Hill 4P game** (in-room or hot-seat) — 10×10 board with lime-glowing center 2×2, 2×2 player panel below (color, shape, name, badge, alive/eliminated status), active player has lime border + 10s countdown ring, round counter "Round 3 / 7" or "Round 5 — Survival"
+9. **Hill 4P game** (in-room or hot-seat) — 10×10 board with lime-glowing center 2×2, 2×2 player panel below (color, shape, name, badge, alive/eliminated status), active player has lime border + 15s countdown ring, round counter "Round 3 / 7" or "Round 5 — Survival"
 10. **Death overlay** (during KoH game) — full-screen dark with red tint, huge "YOU DIED" fade-in, "Eliminated in Round X", two stacked buttons: [👁 Spectate] lime primary, [← Leave Room] outline
 11. **Game over overlay** — 4 variants:
     - 1 winner: "👑 RIKO WINS." + winner color/badge + ELO delta
@@ -261,7 +261,7 @@ interface GameState {
   currentPlayer: Player
   alivePlayers: Player[]
   round: number
-  turnDeadline: number           // Date.now() + 10000
+  turnDeadline: number           // Date.now() + 15000
   status: 'lobby' | 'playing' | 'finished'
   winners: Player[] | null
   mandatoryJumpFrom: Coord | null  // set during multi-jump chains

@@ -13,6 +13,7 @@ import {
   GameOverOverlay,
   type GameOverOverlayProps,
 } from './GameOverOverlay';
+import { TURN_SECONDS } from '@/lib/engine/apply';
 import type { GameViewModel, GameViewPlayer } from '@/lib/game-ui-view';
 import { HILL } from '@/lib/tokens';
 
@@ -157,8 +158,8 @@ export function GameView({
         ? 'HILL · SURVIVAL'
         : 'HILL · BLITZ';
 
-  // Survival gives a longer clock; everything else is the 10s blitz turn.
-  const secondsTotal = vm.mode === 'hill-survival' ? 15 : 10;
+  // One turn timeout for every mode (see TURN_MS); ring denominator matches it.
+  const secondsTotal = TURN_SECONDS;
 
   // Responsive board cell size: bigger on desktop, mobile-safe below lg.
   // Mirrors the Claude-Design export (hill 56/33, classic 66/41).

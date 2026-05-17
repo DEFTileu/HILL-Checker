@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { hillBlitz, hillSurvival } from './presets';
 import { getLegalMoves, isJumpAvailable } from './rules';
-import { applyMove, createInitialState, skipTurn } from './apply';
+import { applyMove, createInitialState, skipTurn, TURN_MS } from './apply';
 import { checkWinners } from './endgame';
 import type { Coord, GameState, Piece, Player } from './types';
 
@@ -21,7 +21,7 @@ function hillState(
     round: 1,
     mandatoryJumpFrom: null,
     winners: null,
-    turnDeadline: Date.now() + 10000,
+    turnDeadline: Date.now() + TURN_MS,
     ...over,
   };
 }
@@ -183,8 +183,8 @@ describe('hill promotion + turn timer', () => {
       captures: [],
     });
     expect(next.currentPlayer).toBe(2);
-    expect(next.turnDeadline).toBeGreaterThanOrEqual(before + 10000 - 50);
-    expect(next.turnDeadline).toBeLessThanOrEqual(Date.now() + 10000 + 50);
+    expect(next.turnDeadline).toBeGreaterThanOrEqual(before + TURN_MS - 50);
+    expect(next.turnDeadline).toBeLessThanOrEqual(Date.now() + TURN_MS + 50);
   });
 
   it('does NOT change turn or deadline mid multi-jump', () => {

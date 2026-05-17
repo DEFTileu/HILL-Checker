@@ -10,7 +10,9 @@ import type {
 } from './types';
 
 /** Seconds-as-ms a player has to make their move before it can be skipped. */
-export const TURN_MS = 10_000;
+export const TURN_MS = 15_000;
+/** Same timeout in whole seconds — used for the countdown ring denominator. */
+export const TURN_SECONDS = TURN_MS / 1000;
 
 function isSkip(action: Action): action is SkipTurn {
   return 'type' in action && action.type === 'skip';

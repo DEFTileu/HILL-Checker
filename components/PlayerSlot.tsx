@@ -29,7 +29,7 @@ interface Props {
  */
 export function PlayerSlot({
   player, name, tier, isHost, empty, eliminated,
-  isActive, secondsLeft, secondsTotal = 10, you,
+  isActive, secondsLeft, secondsTotal = 15, you,
   compact = false, skin = 'bronze', disconnectSecondsLeft,
 }: Props) {
   const color = [HILL.p1, HILL.p2, HILL.p3, HILL.p4][player - 1];

@@ -56,7 +56,7 @@ export function PlayerPanelDesktop({ player, side }: Props) {
 
       <div className="flex items-center gap-3">
         {player.isActive && player.secondsLeft != null ? (
-          <TurnTimer seconds={player.secondsLeft} total={player.secondsTotal ?? 10} size={50}>
+          <TurnTimer seconds={player.secondsLeft} total={player.secondsTotal ?? 15} size={50}>
             <PieceShape player={player.player} size={26} skin={player.skin}/>
           </TurnTimer>
         ) : (
