@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+/.idea/
+
+# Claude Code local (per-machine settings/permissions)
+/.claude/
+
+# editor / scratch backups
+*.bak
+
+# vendored agent skills (tooling-managed; skills-lock.json pins versions)
+/.agents/
