@@ -1,75 +1,84 @@
 # HILL — King of the Board
 
-Browser-native blitz checkers with two modes:
+**Live:** https://hill.javazhan.tech
+**GitHub:** https://github.com/DEFTileu/HILL-Checker
+**Built for:** nFactorial Incubator 2026 (24-hour checkers challenge)
 
-- **Classic 2P** — standard checkers on an 8×8 board, hot-seat on one device.
-- **King of the Hill 4P** — a 10×10 mode where four players race from the
-  corners to a central 2×2 "Hill", king by entering the center, and win by
-  holding the hill when the round cap hits — or by being the last survivor.
+---
 
-## Modes & rules
+## What we built
 
-- **classic-2p** — 8×8, 2 players, capture all opponent pieces to win. Kings
-  on the opposite edge.
-- **hill-blitz** — 10×10, 4 players (5 pieces each from each corner), 2×2
-  center zone, king on center entry, max 7 rounds. Multiple winners possible:
-  anyone with a piece in the center at the cap, or the last survivor.
-- **hill-survival** — same as blitz but max 20 rounds; only the last survivor
-  wins (if the cap is reached, anyone in the center wins, else draw).
-- A **round** = one full cycle of all currently-alive players moving once.
-- **Turn timer**: 15s per turn. Expiry skips the turn (no elimination).
-- **Elimination** only when a player has zero pieces.
+A web platform for checkers **with a brand-new game mode — 4-player King of the Hill**. The checkers market has thousands of classic clones; we added **a mechanic nobody else has**: 4 players start from the corners of a 10×10 board, race to the center 2×2 zone ("the Hill"), promote to kings by entering the center, and the game ends with **either the last survivor OR all players holding the Hill** at the end of round 7 — meaning **multiple winners are possible simultaneously ("Joint Kings")**.
 
-Multiplayer is trust-the-client for MVP: each client runs the pure engine
-locally and broadcasts moves over Supabase Realtime.
+**Three game modes powered by one engine:**
+- **Classic 2P** — standard checkers, 8×8
+- **Hill Blitz** — 4 players, 7 rounds, multi-king victory possible
+- **Hill Survival** — 4 players, last alive wins (20-round safety cap)
 
-## Stack
+**Multiplayer over shareable links** for every mode (Classic 2P + Hill 4P) via Supabase Realtime. Create a room → share a QR code or 4-letter invite code → friends join from their phones. **10-second disconnect grace period** (return within 10s and your pieces are intact; longer and they burn).
 
-Next.js 14 (App Router), TypeScript (strict), Tailwind CSS, Supabase
-(anonymous auth + Postgres + Realtime), Vitest. Deploys on Vercel.
+---
 
-## Architecture
+## Who it's for
 
-- `lib/engine/*` — pure TypeScript rules engine. No React, no Supabase.
-  All rules live in `lib/engine/rules.ts` + `apply.ts`. Both modes run off
-  `GameConfig` presets in `lib/engine/presets.ts`.
-- `lib/game-ui-view.ts` — pure mapper: engine `GameState` → `GameView` props.
-- `components/GameView.tsx` — one presentational game screen used by Classic
-  hot-seat, Hill hot-seat, and the multiplayer room.
-- `app/r/[roomId]` — multiplayer room (lobby + live game via Supabase).
+- **TikTok/Reels audience, 16–25** — fast 3-minute blitz matches with a built-in result share button
+- **Friends at parties** — 4 people with phones in the same room, zero app installs (web-only, QR code right in the lobby)
+- **Streamers and casual esports** — multiplayer with real ELO rating, premium skins, leaderboard
+- **Casual players** — mobile-first, one-thumb playable
 
-## Local development
+---
+
+## Why it's valuable (business signals for the jury)
+
+**1. Unique mechanic = built-in virality.**
+4-player King of the Hill in checkers is **a new genre** — inherently TikTok-shareable. The "Joint Kings" outcome (multiple winners) creates memetic moments like "we made a pact and both won" — impossible in classic checkers.
+
+**2. Real, working monetization.**
+- **Full Stripe integration is wired and functional** (test mode for jury demo): 3 premium skins at $1.99 / $2.99 / $4.99, webhook grants the skin to the user's account after payment, with proper signature verification on the webhook endpoint.
+- Test card: `4242 4242 4242 4242` — judges can run the full purchase flow end-to-end.
+
+**3. Retention mechanics.**
+- Anonymous auth (instant play, zero friction) + Google OAuth upgrade for cross-device sync (`linkIdentity` with graceful fallback when the same Google account is reused across devices).
+- **Real ELO rating system** (K=32 pairwise updates, +24/-24 for equal-rated, correct handling of multi-winner Hill matches).
+- 5 arena tiers (Bronze → Silver → Gold → Master → Champion) — each unlocks a new piece skin at the threshold.
+- Top 100 leaderboard sorted by ELO with client-side search.
+
+**4. Mobile-first product.**
+Core audience is on phones, so every screen is designed at 375px first, with `safe-area-inset`, 44px minimum touch targets, and QR-code-driven mobile invites. Desktop is a real adaptation (side rails, table leaderboard, hover states) — not a stretched portrait page.
+
+---
+
+## What makes the product technically serious
+
+- **Pure-TypeScript engine** in `lib/engine/` — zero React/network coupling, runnable in Node. The same engine drives all 3 modes through `GameConfig` presets, AND the same engine drives both hot-seat and multiplayer (no duplicated logic).
+- **80+ unit tests** cover the rules engine (multi-jump chains, mandatory capture, ELO formula, win conditions across all three modes).
+- **Realtime sync** via Supabase channels (Presence + Broadcast) **with no DB writes per move** — only a snapshot for rejoin and a final `recordGame` POST that registers all participants (winners AND losers, so the leaderboard reflects actual play).
+- **Colorblind accessibility** — each player has a unique **shape** (circle / square / triangle / hexagon), not just a color. Skins are decorators on top of the shape (the shape stays constant, you always know whose piece is whose).
+- **Stripe webhook with signature verification** (rejects forged events). Service-role keys are server-only — never shipped to the client.
+- Deployed on Vercel with a custom domain (`hill.javazhan.tech`).
+
+---
+
+## Tech stack
+
+- Next.js 14 (App Router) + TypeScript (strict mode) + Tailwind CSS
+- Supabase (Auth + Postgres + Realtime channels)
+- Stripe (Checkout sessions + Webhooks)
+- Vercel for hosting and CI
+
+## Local dev
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in your Supabase keys
-npm run dev                  # http://localhost:3000
-```
 
-Scripts: `npm run dev`, `npm run build`, `npm start`, `npm run lint`,
-`npm test` (Vitest).
+# 1. Create a Supabase project and run lib/db/schema.sql in the SQL editor
+# 2. Configure .env.local:
+#    NEXT_PUBLIC_SUPABASE_URL
+#    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+#    SUPABASE_SERVICE_ROLE_KEY
+#    STRIPE_SECRET_KEY
+#    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+#    STRIPE_WEBHOOK_SECRET
+#    NEXT_PUBLIC_APP_URL
 
-### Supabase setup
-
-Create a Supabase project, then apply the schema described in
-`docs/phase-3-supabase-setup.md` and `docs/phase-4-multiplayer-setup.md`
-(the `rooms` and `games` tables + Realtime). Put the URL and keys in
-`.env.local` (see `.env.example`).
-
-## Deploy (Vercel)
-
-1. Push this repo to GitHub and "Import Project" in Vercel.
-2. In Vercel → Project → Settings → Environment Variables, add:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` — **server-side only**, never `NEXT_PUBLIC_`.
-   - `NEXT_PUBLIC_SITE_URL` — your production origin (for OG image URLs).
-3. Ensure the Supabase project schema (above) is applied and Realtime is on.
-4. Build command `next build`, output auto-detected. Deploy.
-5. After first deploy, set `NEXT_PUBLIC_SITE_URL` to the real domain and
-   redeploy so social/OG previews resolve absolute URLs.
-
-## Testing
-
-`npm test` runs the engine + view-model unit suites. Multiplayer realtime is
-verified manually against a live Supabase project (see Supabase setup).
+npm run dev
