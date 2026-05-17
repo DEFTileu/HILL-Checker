@@ -1,7 +1,7 @@
 import type { GameState, Player } from '@/lib/engine/types';
 import type { Piece as UIPiece, Coord as UICoord } from '@/lib/pieces';
 import type { ArenaTier, SkinId } from '@/lib/skins';
-import type { GameOverKind, Winner } from '@/components/hill/screens/GameOverOverlay';
+import type { GameOverKind, Winner } from '@/components/GameOverOverlay';
 
 export function boardToPieces(board: GameState['board']): UIPiece[] {
   const out: UIPiece[] = [];

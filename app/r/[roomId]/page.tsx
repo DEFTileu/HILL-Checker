@@ -34,9 +34,9 @@ import {
   type PresenceEntry,
   type SlotMap,
 } from '@/lib/multiplayer/adapt';
-import { Lobby } from '@/components/hill/screens/Lobby';
+import { Lobby } from '@/components/Lobby';
 import { Board } from '@/components/Board';
-import { GameOverOverlay } from '@/components/hill/screens/GameOverOverlay';
+import { GameOverOverlay } from '@/components/GameOverOverlay';
 import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
 const PRESET = { 'hill-blitz': hillBlitz, 'hill-survival': hillSurvival } as const;

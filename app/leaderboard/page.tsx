@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Leaderboard, type LeaderboardRow } from '@/components/hill/screens/Leaderboard';
+import { Leaderboard, type LeaderboardRow } from '@/components/Leaderboard';
 import { getLeaderboard, toLeaderboardRows } from '@/lib/db/leaderboard';
 import { useAuth } from '@/lib/auth';
 

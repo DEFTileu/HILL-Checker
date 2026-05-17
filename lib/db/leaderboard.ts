@@ -1,6 +1,6 @@
 'use client';
 import { getArenaTier, deriveElo } from '@/lib/arena';
-import type { LeaderboardRow } from '@/components/hill/screens/Leaderboard';
+import type { LeaderboardRow } from '@/components/Leaderboard';
 
 export interface LeaderboardEntry {
   id: string;
