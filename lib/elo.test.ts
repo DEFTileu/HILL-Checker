@@ -78,7 +78,7 @@ describe('calculateGameEloUpdates', () => {
     expect(a).toEqual(b);
   });
 
-  it('STARTING_ELO is 1000', () => {
-    expect(STARTING_ELO).toBe(1000);
+  it('STARTING_ELO is 1100 (mid-Bronze, 50% progress for new players)', () => {
+    expect(STARTING_ELO).toBe(1100);
   });
 });

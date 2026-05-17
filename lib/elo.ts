@@ -2,7 +2,9 @@
 // tested in isolation (mirrors the lib/engine/* purity rule).
 
 const K = 32; // standard K-factor for casual play
-const STARTING_ELO = 1000;
+// 1100 (was 1000) — mid-Bronze (1000–1199), so a brand-new account's tier
+// progress bar starts at 50% instead of a discouraging 0%.
+const STARTING_ELO = 1100;
 
 export { STARTING_ELO };
 

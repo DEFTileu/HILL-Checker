@@ -37,7 +37,7 @@ function toProfile(row: ProfileRow, authUser: User | null): Profile {
         : undefined,
     totalWins: row.total_wins,
     totalGames: row.total_games,
-    // Pre-migration rows have no elo column → fall back to the 1000 floor.
+    // Pre-migration rows have no elo column → fall back to STARTING_ELO.
     arenaTier: getArenaTier(row.elo ?? STARTING_ELO),
     selectedSkin: (row.skin_id as SkinId) ?? 'bronze',
     elo: row.elo ?? STARTING_ELO,
@@ -63,7 +63,23 @@ export async function ensureProfile(authUser: User): Promise<Profile> {
     .maybeSingle();
 
   if (existing) {
-    const row = existing as ProfileRow;
+    let row = existing as ProfileRow;
+
+    // One-time backfill: profiles bootstrapped before the 1000→1100 starting
+    // ELO change sit exactly at the old Bronze floor (1000 → 0% progress
+    // bar). Bump only players who haven't played a game yet; anyone with
+    // games keeps their earned ELO. 1000 is the historical old default, not
+    // STARTING_ELO (which is now 1100).
+    if (row.elo === 1000 && row.total_games === 0) {
+      const { data: bumped } = await sb
+        .from('profiles')
+        .update({ elo: STARTING_ELO })
+        .eq('id', authUser.id)
+        .select('*')
+        .single();
+      if (bumped) row = bumped as ProfileRow;
+    }
+
     // Promote to authorized the first time we see a linked session (e.g. the
     // user just linked Google — onAuthStateChange re-runs this). We only ever
     // flip true → false; a signed-out user becomes a brand-new anon id anyway.

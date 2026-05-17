@@ -11,7 +11,7 @@ create table if not exists profiles (
   display_name text not null,
   total_wins   int  not null default 0,
   total_games  int  not null default 0,
-  elo          int  not null default 1000,       -- real Elo rating (K=32)
+  elo          int  not null default 1100,       -- real Elo rating (K=32); 1100 = mid-Bronze
   skin_id      text not null default 'bronze',  -- bronze|silver|gold|master|champion
   owned_skins  text[] not null default '{}',    -- premium skins purchased via Stripe (webhook-written)
   is_anonymous boolean not null default true,   -- false once linked (Google)
@@ -22,7 +22,13 @@ create table if not exists profiles (
 alter table profiles
   add column if not exists is_anonymous boolean not null default true;
 alter table profiles
-  add column if not exists elo int not null default 1000;
+  add column if not exists elo int not null default 1100;
+-- `add column if not exists` is a no-op when the column already exists, so it
+-- won't change the default on databases provisioned before the 1000→1100
+-- bump. Set it explicitly so trigger-created rows (handle_new_user inserts
+-- only id+display_name and relies on this default) start mid-Bronze.
+alter table profiles
+  alter column elo set default 1100;
 -- Premium skins owned via Stripe purchase. Written ONLY by the service-role
 -- webhook (app/api/webhooks/stripe). Users can SELECT their own row but the
 -- profiles_update_self policy below scopes UPDATE to auth.uid() = id with no
