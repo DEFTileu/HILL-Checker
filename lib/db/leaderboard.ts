@@ -86,6 +86,44 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   return toEntries(all as ProfileRow[]);
 }
 
+export interface ModeCounts {
+  blitz: number;
+  survival: number;
+  classic: number;
+}
+
+// Per-user game counts grouped by mode, for the leaderboard's mode pills
+// (Blitz only / Survival only). Joins game_players → games(mode) and tallies.
+// Returns an empty map on error — callers treat "no count" as "0 games", so
+// the pills just show nobody rather than breaking the board. game_players /
+// games are select-all under RLS, so the anon client can read this.
+export async function getModeCountsByUser(): Promise<Map<string, ModeCounts>> {
+  const { getSupabase } = await import('@/lib/multiplayer/client');
+  const sb = getSupabase();
+  const { data, error } = await sb
+    .from('game_players')
+    .select('user_id, games(mode)');
+
+  const map = new Map<string, ModeCounts>();
+  if (error || !data) return map;
+
+  type Row = {
+    user_id: string | null;
+    games: { mode: string } | { mode: string }[] | null;
+  };
+  for (const row of data as Row[]) {
+    if (!row.user_id || !row.games) continue;
+    const g = Array.isArray(row.games) ? row.games[0] : row.games;
+    if (!g) continue;
+    const c = map.get(row.user_id) ?? { blitz: 0, survival: 0, classic: 0 };
+    if (g.mode === 'hill-blitz') c.blitz += 1;
+    else if (g.mode === 'hill-survival') c.survival += 1;
+    else if (g.mode === 'classic-2p') c.classic += 1;
+    map.set(row.user_id, c);
+  }
+  return map;
+}
+
 // Pure: entries are already sorted by the query; rank is 1-based input order.
 export function toLeaderboardRows(
   entries: LeaderboardEntry[],

@@ -38,7 +38,7 @@ export default function ClassicLocalPage() {
   const moveTo = (r: number, c: number) =>
     legalMoves.find((m) => m.to.row === r && m.to.col === c);
 
-  // 4Hz clock for countdown + skip-on-expiry (10s/turn, no elimination).
+  // 4Hz clock for countdown + skip-on-expiry (15s/turn, no elimination).
   useEffect(() => {
     if (winners) return;
     const id = setInterval(() => setNow(Date.now()), 250);

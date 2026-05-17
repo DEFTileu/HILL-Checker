@@ -1,34 +1,86 @@
 // app/leaderboard/page.tsx — Claude Design table/cards, wired to real data.
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { LeaderboardTable } from '@/components/LeaderboardTable';
 import {
   getLeaderboard,
+  getModeCountsByUser,
   toLeaderboardTableRows,
+  type LeaderboardEntry,
+  type ModeCounts,
 } from '@/lib/db/leaderboard';
-import type { LeaderboardRowData } from '@/components/LeaderboardRow';
 import { useAuth } from '@/lib/auth';
 
 const FILTERS = ['Global', 'Friends · 12', 'This week', 'Blitz only', 'Survival only'] as const;
+type Filter = typeof FILTERS[number];
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
-  const [rows, setRows] = useState<LeaderboardRowData[] | null>(null);
-  const [active, setActive] = useState<typeof FILTERS[number]>('Global');
+  const [entries, setEntries] = useState<LeaderboardEntry[] | null>(null);
+  const [modeCounts, setModeCounts] = useState<Map<string, ModeCounts>>(new Map());
+  const [active, setActive] = useState<Filter>('Global');
+  const [query, setQuery] = useState('');
+  const [isMac, setIsMac] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let alive = true;
-    getLeaderboard().then((entries) => {
-      if (!alive) return;
-      setRows(toLeaderboardTableRows(entries, user?.id));
-    });
+    Promise.all([getLeaderboard(), getModeCountsByUser()]).then(
+      ([list, counts]) => {
+        if (!alive) return;
+        setEntries(list);
+        setModeCounts(counts);
+      },
+    );
     return () => {
       alive = false;
     };
   }, [user]);
 
-  if (rows === null) {
+  // Cmd+K (Mac) / Ctrl+K (others) focuses the search input. We never bind
+  // Ctrl+F — that stays the browser's native find.
+  useEffect(() => {
+    const mac = /Mac|iPhone|iPad|iPod/.test(
+      navigator.platform || navigator.userAgent,
+    );
+    setIsMac(mac);
+    const onKey = (e: KeyboardEvent) => {
+      const combo = mac ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey;
+      if (combo && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  // Filter pills + name search applied client-side, then re-ranked 1..n by the
+  // already-ELO-sorted input order (toLeaderboardTableRows numbers by index).
+  const rows = useMemo(() => {
+    if (entries === null) return null;
+    let filtered = entries;
+    if (active === 'Blitz only') {
+      filtered = filtered.filter(
+        (e) => (modeCounts.get(e.id)?.blitz ?? 0) > 0,
+      );
+    } else if (active === 'Survival only') {
+      filtered = filtered.filter(
+        (e) => (modeCounts.get(e.id)?.survival ?? 0) > 0,
+      );
+    }
+    const q = query.trim().toLowerCase();
+    if (q) {
+      filtered = filtered.filter((e) =>
+        e.displayName.toLowerCase().includes(q),
+      );
+    }
+    return toLeaderboardTableRows(filtered, user?.id);
+  }, [entries, modeCounts, active, query, user]);
+
+  if (entries === null || rows === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center font-mono text-[12px] tracking-[0.18em] text-[var(--hill-muted)]">
         LOADING…
@@ -39,6 +91,14 @@ export default function LeaderboardPage() {
   const top3 = rows.slice(0, 3);
   const rest = rows.slice(3);
   const n = rows.length;
+  const hasAnyPlayers = entries.length > 0;
+  const isFiltering = query.trim().length > 0 || active !== 'Global';
+
+  const clearFilters = () => {
+    setQuery('');
+    setActive('Global');
+    inputRef.current?.focus();
+  };
 
   return (
     <div className="mx-auto w-full max-w-[1280px] px-5 lg:px-12 pt-6 lg:pt-12 pb-10 lg:pb-16">
@@ -85,19 +145,39 @@ export default function LeaderboardPage() {
             <circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />
           </svg>
           <input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Search players"
             className="flex-1 bg-transparent outline-none text-[13px] text-[var(--hill-text)] placeholder-[var(--hill-muted)]"
           />
-          <span className="font-mono text-[10px] text-[var(--hill-dim)] tracking-[0.08em] px-1.5 py-0.5 border border-[var(--hill-border)] rounded">⌘ K</span>
+          <span className="font-mono text-[10px] text-[var(--hill-dim)] tracking-[0.08em] px-1.5 py-0.5 border border-[var(--hill-border)] rounded">
+            {isMac ? '⌘ K' : 'Ctrl K'}
+          </span>
         </div>
       </div>
 
-      {n === 0 ? (
+      {!hasAnyPlayers ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--hill-border)] bg-[var(--hill-surface)] py-20 text-center">
           <div className="text-lg font-extrabold">No ranked players yet</div>
           <p className="max-w-[260px] text-sm text-[var(--hill-muted)]">
             Sign in and finish a game to claim a spot on the board.
           </p>
+        </div>
+      ) : n === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-[var(--hill-border)] bg-[var(--hill-surface)] py-20 text-center">
+          <div className="text-lg font-extrabold">No players match</div>
+          <p className="max-w-[280px] text-sm text-[var(--hill-muted)]">
+            {query.trim()
+              ? `Nobody named “${query.trim()}” on this board.`
+              : 'No players have ranked games in this mode yet.'}
+          </p>
+          <button
+            onClick={clearFilters}
+            className="mt-1 px-4 py-2 rounded-full text-[13px] font-bold bg-[var(--hill-text)] text-[var(--hill-bg)] lg:hover:opacity-90 transition"
+          >
+            Clear
+          </button>
         </div>
       ) : (
         <>
@@ -114,7 +194,7 @@ export default function LeaderboardPage() {
               ))}
             </div>
             <div className="mt-3 text-center text-xs text-[var(--hill-dim)] font-mono tracking-[0.08em]">
-              SHOWING 1–{n} OF {n}
+              {isFiltering ? `${n} MATCH${n === 1 ? '' : 'ES'}` : `SHOWING 1–${n} OF ${n}`}
             </div>
           </div>
 

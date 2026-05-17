@@ -18,13 +18,12 @@ export interface LobbyProps {
 }
 
 export function Lobby({
-                          roomCode, mode, players, isHost, onStart, onCopyLink, onShare, onChangeMode, onBack,
+                          roomCode, mode, players, isHost, onStart, onCopyLink, onShare, onBack,
                       }: LobbyProps) {
     const filled = players.filter(p => !('empty' in p)).length;
     // Slot count is mode-driven: Classic seats 2, Hill seats 4. `players`
     // already has exactly `cfg.players.length` entries (one per slot).
     const max = players.length;
-    const isClassic = mode === 'classic';
     const ready = filled >= 2;
     const roomUrl =
         typeof window !== 'undefined'
@@ -110,11 +109,6 @@ export function Lobby({
                         <div className="mt-6 lg:mt-7">
                             <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em] mb-2 lg:mb-2.5">MODE · LOCKED</div>
                             {ModeCard}
-                            {isHost && !isClassic && (
-                                <button onClick={onChangeMode} className="mt-2 text-[11px] font-semibold tracking-wide text-[var(--hill-muted)] lg:hover:text-[var(--hill-text)]">
-                                    ← change mode
-                                </button>
-                            )}
                         </div>
 
                         {/* Desktop QR */}
