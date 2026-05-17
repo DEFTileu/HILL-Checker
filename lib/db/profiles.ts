@@ -2,7 +2,7 @@
 
 import type { User } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/multiplayer/client';
-import { getArenaTier } from '@/lib/arena';
+import { getArenaTier, deriveElo } from '@/lib/arena';
 import type { Profile, SkinId } from '@/types/hill';
 
 // Raw DB shape (snake_case). The app-wide `Profile` type (types/hill.ts) is
@@ -18,10 +18,6 @@ interface ProfileRow {
 
 const randomName = () =>
   'Player_' + Math.random().toString(16).slice(2, 6).padEnd(4, '0');
-
-// ELO has no column in the MVP schema — derived for display only (profile +
-// leaderboard). Wins are the real progression signal.
-const deriveElo = (wins: number) => 1000 + wins * 20;
 
 function toProfile(row: ProfileRow, authUser: User | null): Profile {
   return {

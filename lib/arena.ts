@@ -16,3 +16,7 @@ export function getArenaTier(wins: number): ArenaTier {
   }
   return tier;
 }
+
+// ELO has no column in the MVP schema — derived for display only (profile +
+// leaderboard). Single source of truth; profiles.ts and leaderboard.ts use it.
+export const deriveElo = (wins: number): number => 1000 + wins * 20;
