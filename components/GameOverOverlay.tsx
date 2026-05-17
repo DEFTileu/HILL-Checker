@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { ArenaBadge } from '@/components/ArenaBadge';
 import { CTAButton } from '@/components/CTAButton';
 import { PieceShape } from '@/components/PieceShape';
@@ -26,7 +27,12 @@ export interface GameOverOverlayProps {
      */
     mode?: 'classic-2p' | 'hill-blitz' | 'hill-survival';
     onPlayAgain: () => void;
-    onShare: () => void;
+    /**
+     * Optional analytics/side-effect hook fired after a successful share or
+     * clipboard copy. The actual share (native sheet + clipboard fallback)
+     * is owned by this component, so call sites no longer need to wire it.
+     */
+    onShare?: () => void;
     onLobby: () => void;
 }
 
@@ -34,6 +40,47 @@ export function GameOverOverlay({
                                     kind, winners, matchDuration, roundCount = 7, mode = 'hill-blitz',
                                     onPlayAgain, onShare, onLobby,
                                 }: GameOverOverlayProps) {
+    const [shareCopied, setShareCopied] = useState(false);
+
+    async function handleShare() {
+        const winnerNames = winners.map((w) => w.name);
+        const winnersText =
+            winnerNames.length === 1
+                ? `${winnerNames[0]} won on HILL!`
+                : winnerNames.length > 1
+                    ? `JOINT KINGS on HILL: ${winnerNames.join(' & ')}!`
+                    : 'NO KING TODAY on HILL — survive next time.';
+
+        const shareData = {
+            title: 'HILL — King of the Board',
+            text: winnersText,
+            url: typeof window !== 'undefined' ? window.location.origin : 'https://hill.javazhan.tech',
+        };
+
+        // Try native share first (mobile).
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+            try {
+                await navigator.share(shareData);
+                onShare?.();
+                return;
+            } catch (err) {
+                // User cancelled — bail silently, don't fall through to clipboard.
+                if (err instanceof DOMException && err.name === 'AbortError') return;
+                // Any other error: fall through to the clipboard fallback.
+            }
+        }
+
+        // Fallback: copy to clipboard (desktop).
+        const fallbackText = `${shareData.text} ${shareData.url}`;
+        try {
+            await navigator.clipboard.writeText(fallbackText);
+            setShareCopied(true);
+            setTimeout(() => setShareCopied(false), 2000);
+            onShare?.();
+        } catch {
+            console.warn('Share failed — clipboard not available');
+        }
+    }
     // Mobile font sizes preserved exactly (solo/none 64px, joint 48px); the
     // md/lg/xl steps only apply on larger viewports.
     const headlineSize = kind === 'joint'
@@ -132,7 +179,7 @@ export function GameOverOverlay({
             >
                 <CTAButton variant="primary" onClick={onPlayAgain} className="lg:w-auto lg:px-8">Play again</CTAButton>
                 <div className="flex gap-2.5 lg:contents">
-                    <CTAButton variant="secondary" onClick={onShare} className="lg:w-auto lg:px-8">Share result</CTAButton>
+                    <CTAButton variant="secondary" onClick={handleShare} className="lg:w-auto lg:px-8">{shareCopied ? '✓ Copied!' : 'Share result'}</CTAButton>
                     <CTAButton variant="secondary" onClick={onLobby} className="lg:w-auto lg:px-8">Lobby</CTAButton>
                 </div>
             </div>

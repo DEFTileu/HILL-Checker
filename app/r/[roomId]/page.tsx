@@ -437,9 +437,6 @@ export default function RoomPage({
                 roundCount: state.round,
                 mode: state.config.mode,
                 onPlayAgain: () => router.push('/r/new'),
-                onShare: () => {
-                  void navigator.clipboard.writeText(window.location.href);
-                },
                 onLobby: () => router.push('/'),
               }
             : null

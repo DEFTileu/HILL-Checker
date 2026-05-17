@@ -111,9 +111,6 @@ export default function ClassicLocalPage() {
               roundCount: state.round,
               mode: state.config.mode,
               onPlayAgain: reset,
-              onShare: () => {
-                void navigator.clipboard.writeText(window.location.href);
-              },
               onLobby: () => router.push('/'),
             }
           : null
