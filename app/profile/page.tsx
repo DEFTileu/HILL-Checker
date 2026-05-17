@@ -255,12 +255,17 @@ export default function ProfilePage() {
 
   const Skins = (
     <div>
-      <div className="flex justify-between items-center mb-2 lg:mb-3">
+      <div className="flex justify-between items-center mb-1">
         <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]">PIECE SKIN</div>
         <div className="font-mono text-[10px] text-[var(--hill-dim)] tracking-[0.08em] lg:tracking-[0.1em]">
-          SHAPE STAYS THE SAME · {unlockedCount} OF {totalSkins} UNLOCKED
+          {unlockedCount} OF {totalSkins} UNLOCKED
         </div>
       </div>
+      <p className="mb-2 lg:mb-3 text-[10px] text-[var(--hill-muted)] leading-[1.4]">
+        Previews show a circle (slot 1). Your in-game shape — circle, square,
+        triangle or hexagon — is set by your player slot; the skin only
+        changes the finish.
+      </p>
       {/* Tier skins — Mobile: horizontal scrolling; desktop: 5-up grid */}
       <div className="hill-scroll flex gap-2 overflow-x-auto px-5 -mx-5 lg:grid lg:grid-cols-5 lg:gap-3 lg:px-0 lg:mx-0">
         {(Object.keys(SKINS) as TierSkinId[]).map(sk => {
