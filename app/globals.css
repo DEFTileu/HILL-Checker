@@ -56,6 +56,20 @@
   to   { opacity: 1; }
 }
 
+/* Premium skin animations (neon_glow / galaxy / royal_gold). */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 10px #00D9FF, 0 0 20px rgba(0,217,255,0.5); }
+  50%      { box-shadow: 0 0 20px #00D9FF, 0 0 40px rgba(0,217,255,0.8); }
+}
+@keyframes galaxy-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes gold-shimmer {
+  0%, 100% { background-position: 0% 0%; }
+  50%      { background-position: 100% 100%; }
+}
+
 /*
  * Claude-Design export tokens. The flat components/* tree references colors
  * via Tailwind arbitrary values like bg-[var(--hill-accent)], so the raw

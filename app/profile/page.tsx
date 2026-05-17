@@ -7,7 +7,16 @@ import { SkinCard } from '@/components/SkinCard';
 import { useAuth } from '@/lib/auth';
 import { TIER_META } from '@/lib/tiers';
 import { getTierProgress } from '@/lib/arena';
-import { SKINS, skinUnlocked, SKIN_REQUIREMENTS, type SkinId } from '@/lib/skins';
+import {
+  SKINS,
+  PREMIUM_SKIN_IDS,
+  skinUnlocked,
+  SKIN_REQUIREMENTS,
+  type SkinId,
+  type TierSkinId,
+} from '@/lib/skins';
+import { PREMIUM_SKIN_PRICES } from '@/lib/stripe-products';
+import { startSkinCheckout } from '@/lib/db/checkout';
 
 // Stats the profile/schema does not (yet) track. Shown as honest placeholders
 // rather than fabricated numbers.
@@ -25,6 +34,8 @@ export default function ProfilePage() {
     logout,
   } = useAuth();
   const [skinSel, setSkinSel] = useState<SkinId | null>(null);
+  const [buying, setBuying] = useState<string | null>(null);
+  const [buyErr, setBuyErr] = useState<string | null>(null);
 
   if (loading || !profile) {
     return (
@@ -43,13 +54,27 @@ export default function ProfilePage() {
   const wins = profile.totalWins;
   const games = profile.totalGames;
   const winRate = games > 0 ? Math.round((wins / games) * 100) : 0;
-  const unlockedCount = (Object.keys(SKINS) as SkinId[]).filter((sk) =>
+  const ownedPremium = profile.ownedSkins;
+  const tierUnlockedCount = (Object.keys(SKINS) as TierSkinId[]).filter((sk) =>
     skinUnlocked(sk, tier),
   ).length;
+  const unlockedCount = tierUnlockedCount + ownedPremium.length;
+  const totalSkins = Object.keys(SKINS).length + PREMIUM_SKIN_IDS.length;
 
   const pickSkin = (sk: SkinId) => {
     setSkinSel(sk);
     void selectSkin(sk);
+  };
+
+  const buySkin = async (sk: string) => {
+    setBuyErr(null);
+    setBuying(sk);
+    const r = await startSkinCheckout(sk);
+    // On success the helper navigates away to Stripe; only reached on failure.
+    if (!r.ok) {
+      setBuyErr(r.error);
+      setBuying(null);
+    }
   };
 
   const Identity = (
@@ -200,12 +225,12 @@ export default function ProfilePage() {
       <div className="flex justify-between items-center mb-2 lg:mb-3">
         <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]">PIECE SKIN</div>
         <div className="font-mono text-[10px] text-[var(--hill-dim)] tracking-[0.08em] lg:tracking-[0.1em]">
-          SHAPE STAYS THE SAME · {unlockedCount} OF {Object.keys(SKINS).length} UNLOCKED
+          SHAPE STAYS THE SAME · {unlockedCount} OF {totalSkins} UNLOCKED
         </div>
       </div>
-      {/* Mobile: horizontal scrolling; desktop: 5-up grid */}
+      {/* Tier skins — Mobile: horizontal scrolling; desktop: 5-up grid */}
       <div className="hill-scroll flex gap-2 overflow-x-auto px-5 -mx-5 lg:grid lg:grid-cols-5 lg:gap-3 lg:px-0 lg:mx-0">
-        {(Object.keys(SKINS) as SkinId[]).map(sk => {
+        {(Object.keys(SKINS) as TierSkinId[]).map(sk => {
           const unlocked = skinUnlocked(sk, tier);
           const skTier = SKINS[sk].tier;
           const unlockText = unlocked
@@ -224,6 +249,71 @@ export default function ProfilePage() {
           );
         })}
       </div>
+
+      {/* Premium skins — purchased via Stripe, never tier-gated */}
+      <div className="mt-5 lg:mt-6 mb-2 lg:mb-3 flex items-center gap-2">
+        <div className="text-[10px] font-bold text-[var(--hill-muted)] tracking-[0.18em]">PREMIUM</div>
+        <div className="font-mono text-[9px] text-[var(--hill-dim)] tracking-[0.1em]">ANIMATED · BUY ONCE · KEEP FOREVER</div>
+      </div>
+      <div className="hill-scroll flex gap-2 overflow-x-auto px-5 -mx-5 lg:grid lg:grid-cols-3 lg:gap-3 lg:px-0 lg:mx-0">
+        {PREMIUM_SKIN_IDS.map((sk) => {
+          const owned = ownedPremium.includes(sk);
+          const meta = PREMIUM_SKIN_PRICES[sk];
+          const isSel = skin === sk;
+          return (
+            <div
+              key={sk}
+              className={[
+                'relative shrink-0 flex flex-col items-center gap-2 rounded-[14px] border-[1.5px] transition',
+                'min-w-[140px] px-3 pt-3.5 pb-3 lg:min-w-0 lg:px-3.5 lg:pt-[18px] lg:pb-3.5',
+                isSel
+                  ? 'border-[var(--hill-accent)] bg-[rgba(191,255,0,0.05)] shadow-[0_0_18px_rgba(191,255,0,0.12)]'
+                  : 'border-[var(--hill-border)] bg-[var(--hill-surface)]',
+              ].join(' ')}
+            >
+              <button
+                type="button"
+                disabled={!owned}
+                onClick={() => owned && pickSkin(sk)}
+                className={[
+                  'flex h-14 w-14 lg:h-[76px] lg:w-[76px] items-center justify-center rounded-xl lg:rounded-[14px] border border-[var(--hill-border)] bg-gradient-to-br from-[#1f1f1f] to-[#0f0f0f]',
+                  owned ? 'cursor-pointer' : 'cursor-default',
+                ].join(' ')}
+                aria-label={owned ? `Select ${meta.displayName}` : `${meta.displayName} (locked)`}
+              >
+                <PieceShape player={1} size={34} skin={sk} />
+              </button>
+
+              <div className="text-center min-h-[24px]">
+                <div className="text-[13px] lg:text-sm font-bold text-[var(--hill-text)] tracking-[-0.01em]">
+                  {meta.displayName}
+                </div>
+              </div>
+
+              {owned ? (
+                <div className="text-[9px] font-extrabold tracking-[0.14em] text-[var(--hill-bg)] bg-[var(--hill-accent)] px-1.5 py-[3px] rounded">
+                  {isSel ? 'SELECTED' : 'OWNED'}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={buying === sk}
+                  onClick={() => void buySkin(sk)}
+                  className="w-full h-8 rounded-lg bg-[var(--hill-accent)] text-[var(--hill-bg)] text-[12px] font-extrabold tracking-[0.02em] transition lg:hover:brightness-95 disabled:opacity-60"
+                >
+                  {buying === sk ? 'Opening…' : `Buy $${meta.priceUsd.toFixed(2)}`}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {buyErr && (
+        <div className="mt-2 text-[11px] font-mono tracking-[0.04em] text-[var(--hill-danger)]">
+          {buyErr}
+        </div>
+      )}
+
       <div className="mt-2 lg:mt-2 text-[11px] text-[var(--hill-muted)] font-mono tracking-[0.04em]">
         <span className="text-[var(--hill-accent)]">✓</span> Auto-saved · applies to all your pieces
       </div>

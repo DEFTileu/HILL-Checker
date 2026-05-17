@@ -54,6 +54,12 @@ export function PieceShape({
   const isMaster = skin === 'master';
   const isSilver = skin === 'silver';
 
+  // Premium (purchased) skins. These layer animated finishes on top of the
+  // base shape — never replacing it — same contract as the tier finishes.
+  const isNeon = skin === 'neon_glow';
+  const isGalaxy = skin === 'galaxy';
+  const isRoyal = skin === 'royal_gold';
+
   const glowColor = isChampion ? HILL.accent : (skin === 'gold' ? '#FFD700' : isMaster ? '#B380E0' : null);
   const baseShadow = 'drop-shadow(0 1px 1px rgba(0,0,0,0.35))';
   const glow = glowColor
@@ -68,7 +74,36 @@ export function PieceShape({
       ].join(' ')}
       style={{ width: s, height: s, opacity: dimmed ? 0.35 : 1, filter: dimmed ? 'grayscale(0.6)' : 'none' }}
     >
-      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{ display: 'block', filter: glow, overflow: 'visible' }}>
+      {isNeon && (
+        <span
+          aria-hidden
+          className="absolute pointer-events-none"
+          style={{
+            inset: s * 0.12,
+            borderRadius: '50%',
+            zIndex: 0,
+            animation: 'neon-pulse 2s ease-in-out infinite',
+          }}
+        />
+      )}
+      {isRoyal && (
+        <span
+          aria-hidden
+          className="absolute pointer-events-none"
+          style={{
+            inset: -s * 0.08,
+            borderRadius: '50%',
+            zIndex: 0,
+            opacity: 0.55,
+            filter: `blur(${Math.max(1, s * 0.06)}px)`,
+            background: 'linear-gradient(135deg, #FFD700, #FF8C00, #FFD700)',
+            backgroundSize: '200% 200%',
+            animation: 'gold-shimmer 3s ease-in-out infinite',
+          }}
+        />
+      )}
+
+      <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} style={{ display: 'block', position: 'relative', zIndex: 1, filter: glow, overflow: 'visible' }}>
         <defs>
           <clipPath id={`clip-${uid}`}>{buildShape({ fill: '#000' })}</clipPath>
           <linearGradient id={`silver-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -86,6 +121,16 @@ export function PieceShape({
             <stop offset="0.6" stopColor="#BFFF00" stopOpacity="0.35"/>
             <stop offset="1" stopColor="#BFFF00" stopOpacity="0"/>
           </radialGradient>
+          <radialGradient id={`galaxy-${uid}`} cx="30%" cy="30%" r="78%">
+            <stop offset="0" stopColor="#8B5CF6" stopOpacity="0.92"/>
+            <stop offset="0.55" stopColor="#6B46C1" stopOpacity="0.6"/>
+            <stop offset="1" stopColor="#1E1B4B" stopOpacity="0.88"/>
+          </radialGradient>
+          <linearGradient id={`royal-${uid}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#FFE680"/>
+            <stop offset="0.5" stopColor="#FF8C00"/>
+            <stop offset="1" stopColor="#FFD700"/>
+          </linearGradient>
         </defs>
 
         {buildShape({ fill, stroke, strokeWidth: 1.5 })}
@@ -114,6 +159,39 @@ export function PieceShape({
             <line x1={half + s * 0.18} y1={half} x2={s - 2} y2={half} stroke="rgba(0,0,0,0.25)"       strokeWidth={Math.max(0.4, s * 0.022)} />
             <line x1={half} y1={half + s * 0.22} x2={half} y2={s - 2} stroke="rgba(0,0,0,0.18)"       strokeWidth={Math.max(0.4, s * 0.022)} />
             <line x1={half - s * 0.18} y1={half} x2={2} y2={half}     stroke="rgba(255,255,255,0.2)"  strokeWidth={Math.max(0.4, s * 0.022)} />
+          </g>
+        )}
+
+        {isGalaxy && (
+          <g clipPath={`url(#clip-${uid})`}>
+            <rect x={0} y={0} width={s} height={s} fill={`url(#galaxy-${uid})`} />
+            {s >= 14 && (
+              <g
+                style={{
+                  transformOrigin: `${half}px ${half}px`,
+                  animation: 'galaxy-rotate 8s linear infinite',
+                }}
+              >
+                {[[0.30, 0.28], [0.70, 0.33], [0.60, 0.70], [0.31, 0.66], [0.78, 0.56]].map(
+                  ([fx, fy], i) => (
+                    <circle
+                      key={i}
+                      cx={s * fx}
+                      cy={s * fy}
+                      r={Math.max(0.6, s * (i % 2 ? 0.03 : 0.045))}
+                      fill="#fff"
+                      opacity={0.85}
+                    />
+                  ),
+                )}
+              </g>
+            )}
+          </g>
+        )}
+
+        {isRoyal && (
+          <g clipPath={`url(#clip-${uid})`}>
+            <rect x={0} y={0} width={s} height={s} fill={`url(#royal-${uid})`} opacity={0.72} />
           </g>
         )}
 

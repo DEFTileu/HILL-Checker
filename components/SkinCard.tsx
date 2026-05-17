@@ -3,7 +3,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { PieceShape } from './PieceShape';
 import type { SkinId, PlayerNum } from '@/lib/skins';
-import { SKINS } from '@/lib/skins';
+import { ALL_SKINS } from '@/lib/skins';
 
 interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   skinId: SkinId;
@@ -14,7 +14,7 @@ interface Props extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'
 }
 
 export function SkinCard({ skinId, samplePlayer = 1, selected, locked, unlockText, ...rest }: Props) {
-  const meta = SKINS[skinId];
+  const meta = ALL_SKINS[skinId];
   return (
     <button
       {...rest}
