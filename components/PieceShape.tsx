@@ -1,6 +1,6 @@
 // components/PieceShape.tsx
 'use client';
-import { useId } from 'react';
+import { memo, useId } from 'react';
 import type { PlayerNum } from '@/lib/tokens';
 import type { SkinId } from '@/lib/skins';
 import { HILL } from '@/lib/tokens';
@@ -28,7 +28,12 @@ interface Props {
  *
  * Skins overlay finishes on top of the base shape/color but never replace them.
  */
-export function PieceShape({
+// All props are primitives, so React.memo's default shallow compare is
+// correct and safe. Board reconciles pieces by key; unmoved pieces keep
+// identical props and skip re-render, and even a moved piece skips (its
+// position lives on the wrapping div's transform, not in these props) —
+// only crowning or a skin change re-renders.
+export const PieceShape = memo(function PieceShape({
   player, size = 28, isKing = false, dimmed = false,
   skin = 'bronze', interactive = false, boardRotated180 = false,
 }: Props) {
@@ -242,4 +247,4 @@ export function PieceShape({
       )}
     </div>
   );
-}
+});
