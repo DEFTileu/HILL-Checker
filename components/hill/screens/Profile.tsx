@@ -4,7 +4,8 @@ import { ArenaBadge } from '../ArenaBadge';
 import { BottomNav } from '../BottomNav';
 import { PieceShape } from '../PieceShape';
 import { SKINS, skinUnlocked, WINS_TO_UNLOCK } from '@/lib/skins';
-import type { Profile, SkinId } from '@/types/hill';
+import type { Profile } from '@/lib/game-ui';
+import type { SkinId } from '@/lib/skins';
 
 export interface ProfileScreenProps {
     profile: Profile | null;

@@ -1,7 +1,8 @@
 'use client';
 import { CTAButton } from '../CTAButton';
 import { PieceShape } from '../PieceShape';
-import type { Player, SkinId } from '@/types/hill';
+import type { Player } from '@/lib/tokens';
+import type { SkinId } from '@/lib/skins';
 
 export interface DeathOverlayProps {
     round: number;

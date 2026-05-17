@@ -1,12 +1,15 @@
 // lib/pieces.ts
 import type { PlayerNum } from './tokens';
+import type { SkinId } from './skins';
 
+export type Coord = [number, number];
 export type PieceKind = 'pawn' | 'king';
 
 export interface Piece {
   player: PlayerNum;
   kind: PieceKind;
-  pos: [number, number];
+  pos: Coord;
+  skin?: SkinId;
   dimmed?: boolean;
 }
 

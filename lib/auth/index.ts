@@ -18,7 +18,8 @@ import {
   updateSkin as dbUpdateSkin,
   resetProfile as dbResetProfile,
 } from '@/lib/db/profiles';
-import type { Profile, SkinId } from '@/types/hill';
+import type { Profile } from '@/lib/game-ui';
+import type { SkinId } from '@/lib/skins';
 
 // ─── Raw auth functions ──────────────────────────────────────────────────────
 

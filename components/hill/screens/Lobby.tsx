@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { CTAButton } from '../CTAButton';
 import { TopBar } from '../TopBar';
 import { PlayerSlot } from '../PlayerSlot';
-import type { GameMode, LobbyPlayer } from '@/types/hill';
+import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
 export interface LobbyProps {
     roomCode: string;

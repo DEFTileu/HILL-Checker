@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { ArenaBadge } from '../ArenaBadge';
 import { BottomNav } from '../BottomNav';
-import type { ArenaTier } from '@/types/hill';
+import type { ArenaTier } from '@/lib/skins';
 
 export interface LeaderboardRow {
     rank: number;

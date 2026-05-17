@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { CTAButton } from '../CTAButton';
 import { TopBar } from '../TopBar';
-import type { GameMode } from '@/types/hill';
+import type { GameMode } from '@/lib/game-ui';
 
 export interface HillModeSelectProps {
     initial?: GameMode;

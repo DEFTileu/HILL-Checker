@@ -1,4 +1,4 @@
-import type { ArenaTier } from '@/types/hill';
+import type { ArenaTier } from '@/lib/skins';
 import { TIER_META } from '@/lib/skins';
 
 export interface ArenaBadgeProps {

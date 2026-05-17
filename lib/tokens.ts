@@ -32,6 +32,8 @@ export const FONT = {
 } as const;
 
 export type PlayerNum = 1 | 2 | 3 | 4;
+/** Spec §6 name for PlayerNum (identical union). */
+export type Player = PlayerNum;
 export const PLAYER_COLORS: Record<PlayerNum, string> = {
   1: HILL.p1,
   2: HILL.p2,

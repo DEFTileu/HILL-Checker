@@ -1,4 +1,4 @@
-import type { ArenaTier } from '@/types/hill';
+import type { ArenaTier } from '@/lib/skins';
 import { WINS_TO_UNLOCK, TIER_RANK } from '@/lib/skins';
 
 // Tiers ordered low → high. Thresholds come from the single source of truth

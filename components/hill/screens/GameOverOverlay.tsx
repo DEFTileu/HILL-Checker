@@ -2,7 +2,8 @@
 import { ArenaBadge } from '../ArenaBadge';
 import { CTAButton } from '../CTAButton';
 import { PieceShape } from '../PieceShape';
-import type { ArenaTier, Player, SkinId } from '@/types/hill';
+import type { Player } from '@/lib/tokens';
+import type { ArenaTier, SkinId } from '@/lib/skins';
 
 export type GameOverKind = 'solo' | 'joint' | 'none';
 

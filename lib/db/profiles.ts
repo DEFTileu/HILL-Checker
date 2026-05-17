@@ -3,7 +3,8 @@
 import type { User } from '@supabase/supabase-js';
 import { getSupabase } from '@/lib/multiplayer/client';
 import { getArenaTier, deriveElo } from '@/lib/arena';
-import type { Profile, SkinId } from '@/types/hill';
+import type { Profile } from '@/lib/game-ui';
+import type { SkinId } from '@/lib/skins';
 
 // Raw DB shape (snake_case). The app-wide `Profile` type (types/hill.ts) is
 // camelCase and carries derived fields (arenaTier, elo) that have no column.

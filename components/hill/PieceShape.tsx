@@ -1,6 +1,7 @@
 'use client';
 import { useId } from 'react';
-import type { Player, SkinId } from '@/types/hill';
+import type { Player } from '@/lib/tokens';
+import type { SkinId } from '@/lib/skins';
 
 export interface PieceShapeProps {
     player: Player;

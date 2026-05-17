@@ -2,7 +2,7 @@
 import { CTAButton } from '../CTAButton';
 import { ArenaBadge } from '../ArenaBadge';
 import { BottomNav } from '../BottomNav';
-import type { Profile } from '@/types/hill';
+import type { Profile } from '@/lib/game-ui';
 
 export interface LandingProps {
     profile: Profile | null; // null = guest

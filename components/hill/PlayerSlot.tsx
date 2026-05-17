@@ -1,7 +1,8 @@
 import { ArenaBadge } from './ArenaBadge';
 import { PieceShape } from './PieceShape';
 import { TurnTimer } from './TurnTimer';
-import type { Player, ArenaTier, SkinId } from '@/types/hill';
+import type { Player } from '@/lib/tokens';
+import type { ArenaTier, SkinId } from '@/lib/skins';
 
 export interface PlayerSlotProps {
     player: Player;

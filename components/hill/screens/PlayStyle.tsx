@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { CTAButton } from '../CTAButton';
 import { TopBar } from '../TopBar';
-import type { GameMode, PlayStyle as PlayStyleId } from '@/types/hill';
+import type { GameMode, PlayStyle as PlayStyleId } from '@/lib/game-ui';
 
 export interface PlayStyleProps {
     mode: GameMode;

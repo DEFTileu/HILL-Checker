@@ -2,11 +2,12 @@
 // Superset module: preserves the original Phase-3 exports used by the
 // components/hill/* tree and lib/arena.ts, while ALSO exposing the names the
 // flat Claude-Design export expects (TierId, SkinDef, UNLOCK_WINS, PlayerNum).
-import type { ArenaTier, SkinId } from '@/types/hill';
 import { HILL } from './tokens';
 
 export type { PlayerNum } from './tokens';
-export type { SkinId, ArenaTier };
+
+export type ArenaTier = 'Bronze' | 'Silver' | 'Gold' | 'Master' | 'Champion';
+export type SkinId = 'bronze' | 'silver' | 'gold' | 'master' | 'champion';
 
 /** Export-doc name for ArenaTier — identical string union. */
 export type TierId = ArenaTier;

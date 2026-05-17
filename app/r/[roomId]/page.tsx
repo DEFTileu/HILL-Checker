@@ -37,7 +37,7 @@ import {
 import { Lobby } from '@/components/hill/screens/Lobby';
 import { Board } from '@/components/hill/Board';
 import { GameOverOverlay } from '@/components/hill/screens/GameOverOverlay';
-import type { GameMode, LobbyPlayer } from '@/types/hill';
+import type { GameMode, LobbyPlayer } from '@/lib/game-ui';
 
 const PRESET = { 'hill-blitz': hillBlitz, 'hill-survival': hillSurvival } as const;
 const toGameMode = (m: RoomMode): GameMode =>

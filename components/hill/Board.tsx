@@ -1,6 +1,8 @@
 'use client';
 import { PieceShape } from './PieceShape';
-import type { Piece, Coord, Player, SkinId } from '@/types/hill';
+import type { Piece, Coord } from '@/lib/pieces';
+import type { Player } from '@/lib/tokens';
+import type { SkinId } from '@/lib/skins';
 
 export interface BoardProps {
     size?: 8 | 10;
