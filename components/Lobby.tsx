@@ -24,11 +24,11 @@ export function Lobby({
     return (
         <div className="relative min-h-screen bg-hill-bg text-hill-text">
             {/* Inline top bar — flat TopBar uses router.back() internally; we need onBack callback */}
-            <div className="sticky top-0 z-20 flex items-center justify-between bg-[var(--hill-bg)] border-b border-[var(--hill-border)] px-4 pt-3.5 pb-3">
+            <div className="sticky top-0 z-10 flex items-center justify-between bg-[var(--hill-bg)] border-b border-[var(--hill-border)] px-4 pt-3.5 pb-3">
                 <div className="flex items-center gap-2.5">
                     <button
                         onClick={onBack}
-                        className="h-9 w-9 rounded-[10px] bg-[var(--hill-surface)] border border-[var(--hill-border)] inline-flex items-center justify-center text-[var(--hill-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)]"
+                        className="h-9 w-9 rounded-[10px] bg-[var(--hill-surface)] border border-[var(--hill-border)] inline-flex items-center justify-center text-[var(--hill-text)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)]"
                         aria-label="Back"
                     >
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3L5 8l5 5"/></svg>
