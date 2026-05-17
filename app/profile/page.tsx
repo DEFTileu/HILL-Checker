@@ -300,7 +300,7 @@ export default function ProfilePage() {
                 'relative shrink-0 flex flex-col items-center gap-2 rounded-[14px] border-[1.5px] transition',
                 'min-w-[140px] px-3 pt-3.5 pb-3 lg:min-w-0 lg:px-3.5 lg:pt-[18px] lg:pb-3.5',
                 isSel
-                  ? 'border-[var(--hill-accent)] bg-[rgba(191,255,0,0.05)] shadow-[0_0_18px_rgba(191,255,0,0.12)]'
+                  ? 'border-[var(--hill-accent)] bg-[rgba(191,255,0,0.05)] shadow-[inset_0_0_12px_rgba(191,255,0,0.18)]'
                   : 'border-[var(--hill-border)] bg-[var(--hill-surface)]',
               ].join(' ')}
             >

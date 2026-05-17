@@ -24,7 +24,7 @@ export function SkinCard({ skinId, samplePlayer = 1, selected, locked, unlockTex
         'min-w-[116px] px-3 pt-3.5 pb-3 lg:min-w-0 lg:px-3.5 lg:pt-[18px] lg:pb-3.5',
         'bg-[var(--hill-surface)] border-[1.5px]',
         selected
-          ? 'border-[var(--hill-accent)] bg-[rgba(191,255,0,0.05)] shadow-[0_0_18px_rgba(191,255,0,0.12)]'
+          ? 'border-[var(--hill-accent)] bg-[rgba(191,255,0,0.05)] shadow-[inset_0_0_12px_rgba(191,255,0,0.18)]'
           : 'border-[var(--hill-border)] lg:hover:border-[var(--hill-accent)] lg:hover:-translate-y-0.5',
         locked ? 'opacity-55' : '',
         'focus-visible:ring-2 focus-visible:ring-[var(--hill-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--hill-bg)]',
