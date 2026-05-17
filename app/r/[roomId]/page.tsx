@@ -1,0 +1,399 @@
+'use client';
+import { use, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { RealtimeChannel } from '@supabase/supabase-js';
+import { hillBlitz, hillSurvival } from '@/lib/engine/presets';
+import { applyMove, createInitialState } from '@/lib/engine/apply';
+import { getLegalMoves } from '@/lib/engine/rules';
+import { checkWinners } from '@/lib/engine/endgame';
+import type { Action, GameState, Player } from '@/lib/engine/types';
+import { useAuth } from '@/lib/auth';
+import {
+  getRoom,
+  updateRoomState,
+  type RoomMode,
+  type RoomRow,
+} from '@/lib/db/rooms';
+import {
+  subscribeToRoom,
+  broadcastMove,
+  broadcastGameStart,
+  broadcastSyncRequest,
+  broadcastSyncResponse,
+  broadcastModeChange,
+  trackPresence,
+} from '@/lib/multiplayer/channel';
+import {
+  assignSlots,
+  boardToPieces,
+  toTuple,
+  winnersToGameOver,
+  type PresenceEntry,
+  type SlotMap,
+} from '@/lib/multiplayer/adapt';
+import { Lobby } from '@/components/hill/screens/Lobby';
+import { Board } from '@/components/hill/Board';
+import { GameOverOverlay } from '@/components/hill/screens/GameOverOverlay';
+import type { GameMode, LobbyPlayer } from '@/types/hill';
+
+const PRESET = { 'hill-blitz': hillBlitz, 'hill-survival': hillSurvival } as const;
+const toGameMode = (m: RoomMode): GameMode =>
+  m === 'hill-survival' ? 'survival' : 'blitz';
+
+export default function RoomPage({
+  params,
+}: {
+  params: Promise<{ roomId: string }>;
+}) {
+  const { roomId } = use(params);
+  const router = useRouter();
+  const { user, profile } = useAuth();
+
+  const [room, setRoom] = useState<RoomRow | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [presence, setPresence] = useState<PresenceEntry[]>([]);
+  const [mode, setMode] = useState<RoomMode>('hill-blitz');
+  const [state, setState] = useState<GameState | null>(null);
+  const [slots, setSlots] = useState<SlotMap>({});
+  const [selected, setSelected] = useState<{ row: number; col: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  // startedAtMs mirrors the startedAt ref for render-safe reads (elapsed timer display).
+  const [startedAtMs, setStartedAtMs] = useState(0);
+
+  const chRef = useRef<RealtimeChannel | null>(null);
+  const stateRef = useRef<GameState | null>(null);
+  const slotsRef = useRef<SlotMap>({});
+  const isHostRef = useRef(false);
+  const elimRound = useRef<Partial<Record<Player, number>>>({});
+  const prevAlive = useRef<Player[]>([]);
+  const recorded = useRef(false);
+  const startedAt = useRef<number>(0);
+
+  // Sync mutable refs after every render so callbacks/effects always see the
+  // latest values. useLayoutEffect runs synchronously after DOM mutations and
+  // before any effects fire, which is the correct place to write refs.
+  const isHost = !!user && !!room && room.host_user_id === user.id;
+  useLayoutEffect(() => {
+    stateRef.current = state;
+    slotsRef.current = slots;
+    isHostRef.current = isHost;
+  });
+
+  const winners = useMemo(() => (state ? checkWinners(state) : null), [state]);
+
+  // Apply an engine action locally; mover also broadcasts.
+  const applyAction = useCallback((action: Action, broadcast: boolean) => {
+    setState((prev) => {
+      if (!prev) return prev;
+      const next = applyMove(prev, action);
+      if (broadcast && chRef.current) broadcastMove(chRef.current, action);
+      return next;
+    });
+  }, []);
+
+  // Load room + subscribe.
+  useEffect(() => {
+    let active = true;
+    if (!user || !profile) return;
+
+    (async () => {
+      const r = await getRoom(roomId);
+      if (!active) return;
+      if (!r) {
+        setNotFound(true);
+        return;
+      }
+      setRoom(r);
+      setMode(r.mode);
+      if (r.status === 'playing' && r.state) {
+        setState(r.state.game);
+        setSlots(r.state.slots);
+        const ts = Date.now();
+        startedAt.current = ts;
+        setStartedAtMs(ts);
+      }
+
+      const ch = subscribeToRoom(roomId, {
+        onPresenceSync: (e) => setPresence(e),
+        onMove: (action) => applyAction(action, false),
+        onGameStart: ({ state: s, slots: sl }) => {
+          const ts = Date.now();
+          startedAt.current = ts;
+          setStartedAtMs(ts);
+          recorded.current = false;
+          elimRound.current = {};
+          prevAlive.current = [...s.alivePlayers];
+          setSlots(sl);
+          setState(s);
+          setRoom((cur) => (cur ? { ...cur, status: 'playing' } : cur));
+        },
+        onGameEnd: () => {},
+        onSyncRequest: () => {
+          if (stateRef.current && chRef.current) {
+            broadcastSyncResponse(chRef.current, stateRef.current);
+          }
+        },
+        onSyncResponse: (s) => {
+          if (!stateRef.current) setState(s);
+        },
+        onModeChange: (m) => setMode(m),
+      });
+      chRef.current = ch;
+
+      ch.subscribe(async (status) => {
+        if (status !== 'SUBSCRIBED') return;
+        await trackPresence(ch, {
+          userId: user.id,
+          displayName: profile.displayName,
+          tier: profile.arenaTier,
+          skin: profile.selectedSkin,
+          joinedAt: Date.now(),
+        });
+        if (r.status === 'playing') broadcastSyncRequest(ch);
+      });
+    })();
+
+    return () => {
+      active = false;
+      if (chRef.current) {
+        chRef.current.unsubscribe();
+        chRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, user, profile]);
+
+  // Host side-effects: snapshot, elimination, result recording.
+  useEffect(() => {
+    if (!state || !isHostRef.current) return;
+
+    const dropped = prevAlive.current.filter(
+      (p) => !state.alivePlayers.includes(p),
+    );
+    for (const p of dropped) {
+      if (elimRound.current[p] == null) elimRound.current[p] = state.round;
+    }
+    prevAlive.current = [...state.alivePlayers];
+
+    void updateRoomState(roomId, {
+      state: { game: state, slots: slotsRef.current },
+      status: winners ? 'finished' : 'playing',
+    });
+
+    if (winners && !recorded.current) {
+      recorded.current = true;
+      const sl = slotsRef.current;
+      const players = (Object.keys(sl) as unknown as Player[])
+        .map(Number)
+        .filter((p): p is Player => !!sl[p as Player])
+        .map((p) => ({
+          userId: sl[p]!.userId,
+          slot: p,
+          eliminatedRound: elimRound.current[p] ?? null,
+        }));
+      const winnerIds = winners
+        .map((p) => sl[p]?.userId)
+        .filter((x): x is string => !!x);
+      void fetch('/api/games', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          mode: state.config.mode,
+          winners: winnerIds,
+          players,
+        }),
+      });
+    }
+  }, [state, winners, roomId]);
+
+  // Host timer authority: skip on deadline expiry.
+  useEffect(() => {
+    if (!state) return;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [state]);
+
+  useEffect(() => {
+    if (!state || winners || !isHostRef.current) return;
+    if (state.turnDeadline && now >= state.turnDeadline) {
+      applyAction({ type: 'skip' }, true);
+      // Defer setSelected to avoid synchronous setState inside effect body.
+      queueMicrotask(() => setSelected(null));
+    }
+  }, [now, state, winners, applyAction]);
+
+  // Derived.
+  const mySlotPlayer = useMemo<Player | null>(() => {
+    if (!user) return null;
+    for (const p of Object.keys(slots) as unknown as Player[]) {
+      if (slots[Number(p) as Player]?.userId === user.id) {
+        return Number(p) as Player;
+      }
+    }
+    return null;
+  }, [slots, user]);
+
+  const canMove =
+    !!state && !winners && state.currentPlayer === mySlotPlayer;
+
+  const legalMoves = useMemo(
+    () =>
+      state && selected && canMove ? getLegalMoves(state, selected) : [],
+    [state, selected, canMove],
+  );
+  const moveTo = (r: number, c: number) =>
+    legalMoves.find((m) => m.to.row === r && m.to.col === c);
+
+  const handleSquare = useCallback(
+    ([r, c]: [number, number]) => {
+      if (!state || winners || !canMove) return;
+      const m = moveTo(r, c);
+      if (m) {
+        applyAction(m, true);
+        setSelected(
+          stateRef.current?.mandatoryJumpFrom
+            ? { row: r, col: c }
+            : null,
+        );
+        return;
+      }
+      const piece = state.board[r][c];
+      if (piece && piece.player === state.currentPlayer) {
+        if (state.mandatoryJumpFrom) return;
+        setSelected({ row: r, col: c });
+        return;
+      }
+      setSelected(null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state, winners, canMove, legalMoves],
+  );
+
+  // Render.
+  if (notFound) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-hill-bg text-hill-text">
+        <div className="text-2xl font-extrabold">Room not found</div>
+        <button
+          onClick={() => router.push('/')}
+          className="rounded-[10px] border border-hill-border bg-hill-surface px-4 py-2 text-sm font-semibold"
+        >
+          Home
+        </button>
+      </div>
+    );
+  }
+  if (!room) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-hill-bg text-hill-muted font-mono text-[12px] tracking-[0.18em]">
+        LOADING…
+      </div>
+    );
+  }
+
+  // GAME view
+  if (state && room.status === 'playing') {
+    const cfg = state.config;
+    const go = winners ? winnersToGameOver(winners, slots) : null;
+    const elapsed = Math.max(0, Math.floor((now - startedAtMs) / 1000));
+    const dur = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
+    return (
+      <div className="flex min-h-screen flex-col items-center gap-4 bg-hill-bg p-5 text-hill-text">
+        <div className="font-mono text-[11px] tracking-[0.2em] text-hill-muted">
+          ROOM {roomId} · ROUND {state.round}
+          {canMove ? ' · YOUR TURN' : ` · P${state.currentPlayer}`}
+        </div>
+        <Board
+          size={cfg.boardSize as 8 | 10}
+          pieces={boardToPieces(state.board)}
+          centerZone={cfg.centerZone.map(toTuple)}
+          selected={selected ? toTuple(selected) : null}
+          highlighted={legalMoves.map((m) => toTuple(m.to))}
+          onSquareClick={handleSquare}
+        />
+        {go && (
+          <GameOverOverlay
+            kind={go.kind}
+            winners={go.winners}
+            matchDuration={dur}
+            roundCount={state.round}
+            onPlayAgain={() => router.push('/r/new')}
+            onShare={() => {
+              void navigator.clipboard.writeText(window.location.href);
+            }}
+            onLobby={() => router.push('/')}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // LOBBY view
+  const cfg = PRESET[mode];
+  const sorted = [...presence].sort((a, b) => a.joinedAt - b.joinedAt);
+  const lobbyPlayers = cfg.players.map((p, i) => {
+    const e = sorted[i];
+    if (!e) return { player: p, empty: true as const };
+    const lp: LobbyPlayer = {
+      player: p,
+      name: e.displayName,
+      tier: e.tier,
+      skin: e.skin,
+      isHost: e.userId === room.host_user_id,
+      isYou: e.userId === user?.id,
+    };
+    return lp;
+  });
+
+  const onStart = () => {
+    if (!isHost || !chRef.current) return;
+    const filled = presence.length;
+    if (filled < 2) return;
+    const sl = assignSlots(presence, cfg.players.slice(0, filled));
+    const initial = createInitialState(cfg);
+    const ts = Date.now();
+    startedAt.current = ts;
+    setStartedAtMs(ts);
+    recorded.current = false;
+    elimRound.current = {};
+    prevAlive.current = [...initial.alivePlayers];
+    setSlots(sl);
+    setState(initial);
+    setRoom({ ...room, status: 'playing' });
+    broadcastGameStart(chRef.current, { state: initial, slots: sl });
+    void updateRoomState(roomId, {
+      state: { game: initial, slots: sl },
+      status: 'playing',
+    });
+  };
+
+  const cycleMode = () => {
+    if (!isHost || !chRef.current) return;
+    const next: RoomMode =
+      mode === 'hill-blitz' ? 'hill-survival' : 'hill-blitz';
+    setMode(next);
+    broadcastModeChange(chRef.current, next);
+  };
+
+  return (
+    <Lobby
+      roomCode={roomId}
+      mode={toGameMode(mode)}
+      players={lobbyPlayers}
+      isHost={isHost}
+      onStart={onStart}
+      onChangeMode={cycleMode}
+      onCopyLink={() => {
+        void navigator.clipboard.writeText(window.location.href);
+      }}
+      onShare={() => {
+        if (navigator.share) {
+          void navigator.share({ url: window.location.href });
+        } else {
+          void navigator.clipboard.writeText(window.location.href);
+        }
+      }}
+      onBack={() => router.push('/')}
+    />
+  );
+}
