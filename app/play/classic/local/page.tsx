@@ -1,4 +1,4 @@
-// app/play/classic/page.tsx — fully playable local 2-player checkers.
+// app/play/classic/local/page.tsx — fully playable local 2-player checkers.
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -19,7 +19,7 @@ const META: PlayerMeta[] = [
   { player: 2, name: 'Black', tier: 'Bronze', skin: 'gold' },
 ];
 
-export default function ClassicPage() {
+export default function ClassicLocalPage() {
   const router = useRouter();
   const [state, setState] = useState<GameState>(() =>
     createInitialState(classic2P),
@@ -101,7 +101,7 @@ export default function ClassicPage() {
       legalTargets={legalMoves.map((m) => [m.to.row, m.to.col])}
       isYourTurn={!winners}
       onSquareClick={handleSquare}
-      onResign={() => router.push('/')}
+      onResign={() => router.push('/play/classic')}
       gameOver={
         ov
           ? {

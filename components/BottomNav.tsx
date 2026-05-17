@@ -30,11 +30,11 @@ function activeFromPath(pathname: string): TabId {
 }
 
 // Hide the tab bar on actual gameplay screens (board is on-screen) so it
-// doesn't sit over the game. The pre-game wizard (/play/hill/mode, /style)
-// keeps the nav — its CTA layout reserves the 88px nav strip — and the
-// transient /r/new room-creator isn't gameplay either.
+// doesn't sit over the game. The pre-game wizards (/play/hill/mode, /style,
+// /play/classic) keep the nav — their CTA layout reserves the 88px nav
+// strip — and the transient /r/new room-creator isn't gameplay either.
 function isGameplay(pathname: string): boolean {
-  if (pathname === '/play/classic') return true;
+  if (pathname === '/play/classic/local') return true;
   if (pathname === '/play/hill/local') return true;
   // /r/<roomId> is the lobby+game; /r/new is just the creator redirect.
   if (pathname.startsWith('/r/') && pathname !== '/r/new') return true;
