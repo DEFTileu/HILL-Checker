@@ -9,7 +9,6 @@ export interface RoomHandlers {
   onPresenceSync: (entries: PresenceEntry[]) => void;
   onMove: (action: Action) => void;
   onGameStart: (payload: { state: GameState; slots: SlotMap }) => void;
-  onGameEnd: () => void;
   onSyncRequest: () => void;
   onSyncResponse: (state: GameState) => void;
   onModeChange: (mode: RoomMode) => void;
@@ -42,7 +41,6 @@ export function subscribeToRoom(
   ch.on('broadcast', { event: 'game:start' }, ({ payload }) =>
     handlers.onGameStart(payload as { state: GameState; slots: SlotMap }),
   );
-  ch.on('broadcast', { event: 'game:end' }, () => handlers.onGameEnd());
   ch.on('broadcast', { event: 'sync_request' }, () => handlers.onSyncRequest());
   ch.on('broadcast', { event: 'sync_response' }, ({ payload }) =>
     handlers.onSyncResponse(payload as GameState),
@@ -61,9 +59,6 @@ export function broadcastGameStart(
   payload: { state: GameState; slots: SlotMap },
 ) {
   return ch.send({ type: 'broadcast', event: 'game:start', payload });
-}
-export function broadcastGameEnd(ch: RealtimeChannel) {
-  return ch.send({ type: 'broadcast', event: 'game:end', payload: {} });
 }
 export function broadcastSyncRequest(ch: RealtimeChannel) {
   return ch.send({ type: 'broadcast', event: 'sync_request', payload: {} });

@@ -128,7 +128,6 @@ export default function RoomPage({
           setState(s);
           setRoom((cur) => (cur ? { ...cur, status: 'playing' } : cur));
         },
-        onGameEnd: () => {},
         onSyncRequest: () => {
           if (stateRef.current && chRef.current) {
             broadcastSyncResponse(chRef.current, stateRef.current);
@@ -205,10 +204,10 @@ export default function RoomPage({
 
   // Host timer authority: skip on deadline expiry.
   useEffect(() => {
-    if (!state) return;
+    if (!state || winners) return;
     const id = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
-  }, [state]);
+  }, [state, winners]);
 
   useEffect(() => {
     if (!state || winners || !isHostRef.current) return;

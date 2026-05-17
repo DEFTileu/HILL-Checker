@@ -10,7 +10,10 @@ export async function POST(req: Request) {
   let mode = 'hill-blitz';
   try {
     const body = await req.json();
-    if (body?.mode === 'hill-survival' || body?.mode === 'hill-blitz') {
+    if (body?.mode !== undefined && body?.mode !== null) {
+      if (body.mode !== 'hill-blitz' && body.mode !== 'hill-survival') {
+        return Response.json({ error: 'invalid mode' }, { status: 400 });
+      }
       mode = body.mode;
     }
   } catch {
