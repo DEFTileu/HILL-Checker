@@ -4,6 +4,7 @@
 import type { GameState, Player } from '@/lib/engine/types';
 import type { Piece as UIPiece } from '@/lib/pieces';
 import type { ArenaTier, SkinId } from '@/lib/skins';
+import type { GameOverKind, Winner } from '@/components/GameOverOverlay';
 import { boardToPieces, toTuple } from '@/lib/multiplayer/adapt';
 
 export interface PlayerMeta {
@@ -59,4 +60,21 @@ export function toGameViewModel(
     maxRounds: state.config.maxRounds,
     mode: state.config.mode,
   };
+}
+
+// Mirrors lib/multiplayer/adapt.winnersToGameOver but keyed off PlayerMeta[]
+// instead of a multiplayer SlotMap, so local (hot-seat) pages can reuse it.
+export function winnersToOverlay(
+  winners: Player[],
+  meta: PlayerMeta[],
+): { kind: GameOverKind; winners: Winner[] } {
+  const kind: GameOverKind =
+    winners.length === 0 ? 'none' : winners.length === 1 ? 'solo' : 'joint';
+  const list: Winner[] = winners.flatMap((p) => {
+    const m = meta.find((x) => x.player === p);
+    return m
+      ? [{ player: p, name: m.name, tier: m.tier, skin: m.skin, eloDelta: 20 }]
+      : [];
+  });
+  return { kind, winners: list };
 }

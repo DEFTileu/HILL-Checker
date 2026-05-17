@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialState } from '@/lib/engine/apply';
 import { classic2P } from '@/lib/engine/presets';
-import { toGameViewModel, type PlayerMeta } from '@/lib/game-ui-view';
+import { toGameViewModel, winnersToOverlay, type PlayerMeta } from '@/lib/game-ui-view';
 
 const META: PlayerMeta[] = [
   { player: 1, name: 'White', tier: 'Bronze', skin: 'bronze', isYou: true },
@@ -37,5 +37,30 @@ describe('toGameViewModel', () => {
     expect(vm.players.find((p) => p.player === 1)!.isActive).toBe(false);
     expect(vm.players.find((p) => p.player === 2)!.alive).toBe(false);
     expect(vm.players.find((p) => p.player === 1)!.alive).toBe(false);
+  });
+});
+
+describe('winnersToOverlay', () => {
+  const meta: PlayerMeta[] = [
+    { player: 1, name: 'Ann', tier: 'Gold', skin: 'gold' },
+    { player: 2, name: 'Bo', tier: 'Silver', skin: 'silver' },
+  ];
+
+  it('solo winner', () => {
+    const r = winnersToOverlay([1], meta);
+    expect(r.kind).toBe('solo');
+    expect(r.winners).toEqual([
+      { player: 1, name: 'Ann', tier: 'Gold', skin: 'gold', eloDelta: 20 },
+    ]);
+  });
+
+  it('joint winners', () => {
+    expect(winnersToOverlay([1, 2], meta).kind).toBe('joint');
+  });
+
+  it('no winner', () => {
+    const r = winnersToOverlay([], meta);
+    expect(r.kind).toBe('none');
+    expect(r.winners).toEqual([]);
   });
 });
