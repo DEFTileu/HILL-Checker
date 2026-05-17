@@ -1,180 +1,169 @@
+// app/play/classic/page.tsx
 'use client';
+import { useState } from 'react';
+import { TopBar } from '@/components/TopBar';
+import { Board } from '@/components/Board';
+import { PieceShape } from '@/components/PieceShape';
+import { PlayerSlot } from '@/components/PlayerSlot';
+import { ArenaBadge } from '@/components/ArenaBadge';
+import type { Piece } from '@/lib/pieces';
 
-// TEMPORARY inline board for end-to-end playtesting.
-// Real UI comes from Claude Design later — this only wires the pure
-// engine to clicks. No game rules live here.
-
-import { useMemo, useState } from 'react';
-import { classic2P } from '@/lib/engine/presets';
-import { applyMove, createInitialState } from '@/lib/engine/apply';
-import { getLegalMoves } from '@/lib/engine/rules';
-import { checkWinners } from '@/lib/engine/endgame';
-import type { Coord, GameState, Move } from '@/lib/engine/types';
+const PIECES: Piece[] = [
+  { player: 1, kind: 'pawn', pos: [5, 0] }, { player: 1, kind: 'pawn', pos: [5, 2] },
+  { player: 1, kind: 'pawn', pos: [6, 1] }, { player: 1, kind: 'pawn', pos: [6, 3] },
+  { player: 1, kind: 'pawn', pos: [6, 5] }, { player: 1, kind: 'pawn', pos: [6, 7] },
+  { player: 1, kind: 'pawn', pos: [7, 0] }, { player: 1, kind: 'pawn', pos: [7, 2] },
+  { player: 1, kind: 'king', pos: [4, 5] },
+  { player: 2, kind: 'pawn', pos: [0, 1] }, { player: 2, kind: 'pawn', pos: [0, 3] },
+  { player: 2, kind: 'pawn', pos: [0, 5] }, { player: 2, kind: 'pawn', pos: [1, 0] },
+  { player: 2, kind: 'pawn', pos: [1, 4] }, { player: 2, kind: 'pawn', pos: [1, 6] },
+  { player: 2, kind: 'pawn', pos: [2, 3] }, { player: 2, kind: 'pawn', pos: [3, 4] },
+];
 
 export default function ClassicPage() {
-  const [state, setState] = useState<GameState>(() => createInitialState(classic2P));
-  const [selected, setSelected] = useState<Coord | null>(null);
-
-  const winners = useMemo(() => checkWinners(state), [state]);
-
-  const legalMoves: Move[] = useMemo(
-    () => (selected ? getLegalMoves(state, selected) : []),
-    [state, selected],
-  );
-
-  const moveTo = (r: number, c: number): Move | undefined =>
-    legalMoves.find((m) => m.to.row === r && m.to.col === c);
-
-  function handleSquareClick(r: number, c: number) {
-    if (winners) return;
-
-    // Completing a (possibly multi-) jump or step.
-    const move = moveTo(r, c);
-    if (move) {
-      const next = applyMove(state, move);
-      setState(next);
-      // Auto-keep the jumping piece selected during a forced multi-jump.
-      setSelected(next.mandatoryJumpFrom ?? null);
-      return;
-    }
-
-    // Selecting one of the current player's own pieces.
-    const piece = state.board[r][c];
-    if (piece && piece.player === state.currentPlayer) {
-      if (state.mandatoryJumpFrom) return; // locked to the jumping piece
-      setSelected({ row: r, col: c });
-      return;
-    }
-
-    setSelected(null);
-  }
-
-  const n = classic2P.boardSize;
-  const isSelected = (r: number, c: number) =>
-    selected?.row === r && selected?.col === c;
-
-  let banner: string;
-  if (winners === null) {
-    banner = `Player ${state.currentPlayer}'s turn — round ${state.round}`;
-  } else if (winners.length === 0) {
-    banner = 'Draw!';
-  } else {
-    banner = `Player ${winners.join(' & ')} wins!`;
-  }
+  const [size] = useState<8>(8);
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: 16,
-        padding: 24,
-        background: '#1e1e24',
-        color: '#f5f5f5',
-        fontFamily: 'system-ui, sans-serif',
-      }}
+    <>
+      <TopBar
+        right={
+          <button className="px-2.5 py-1.5 rounded-lg bg-[var(--hill-surface)] border border-[var(--hill-border)] text-[11px] text-[var(--hill-muted)] tracking-[0.08em] font-bold lg:hover:border-[var(--hill-accent)] transition">
+            RESIGN
+          </button>
+        }
+      />
+
+      <div className="mx-auto w-full max-w-[1280px] px-3 lg:px-12 pt-3 lg:pt-7 pb-10 lg:pb-12">
+        {/* Top status bar */}
+        <div className="hidden lg:flex items-center justify-between mb-4">
+          <button className="text-[13px] text-[var(--hill-muted)] hover:text-[var(--hill-text)] tracking-[0.04em]">← Back to menu</button>
+          <span className="font-mono text-[11px] text-[var(--hill-muted)] tracking-[0.14em]">CLASSIC · 8×8 · 2P</span>
+        </div>
+
+        {/* Turn indicator above board */}
+        <div className="flex justify-center mt-3 lg:mt-0 mb-4 lg:mb-5">
+          <div className="inline-flex items-center gap-2.5 lg:gap-3.5 px-3.5 lg:px-5 py-2 lg:py-3 pl-2.5 lg:pl-4 rounded-full bg-[var(--hill-surface)] border-[1.5px] border-[var(--hill-accent)] text-[13px] lg:text-base font-bold shadow-[0_0_18px_rgba(191,255,0,0.12)] lg:shadow-[0_0_24px_rgba(191,255,0,0.15)]">
+            <PieceShape player={1} size={22} skin="silver"/>
+            <span>WHITE&apos;S TURN</span>
+            <span className="w-px h-4 bg-[var(--hill-borderHi)] hidden lg:inline-block"/>
+            <span className="font-mono text-[var(--hill-accent)] text-xs lg:text-base">0:07</span>
+          </div>
+        </div>
+
+        {/* Board with side panels on desktop */}
+        <div className="lg:flex lg:items-center lg:justify-center lg:gap-9">
+          {/* Desktop P1 panel */}
+          <div className="hidden lg:block">
+            <ClassicSidePanel player={1} name="Aida K." tier="Gold" you isActive captured={3} pieces={9} skin="silver" alignment="right"/>
+          </div>
+
+          <div className="flex justify-center">
+            <Board
+              size={size}
+              pieces={PIECES}
+              cellSize={typeof window !== 'undefined' && window.innerWidth >= 1024 ? 66 : 41}
+              skinForPlayer={{ 1: 'silver', 2: 'gold' }}
+              selected={[4, 5]}
+              highlighted={[[3, 4], [3, 6], [2, 3], [2, 7]]}
+              lastMove={[[3, 4], [4, 5]]}
+              ownPlayer={1}
+              isYourTurn={true}
+            />
+          </div>
+
+          <div className="hidden lg:block">
+            <ClassicSidePanel player={2} name="Marcus J." tier="Gold" captured={4} pieces={8} skin="gold" alignment="left"/>
+          </div>
+        </div>
+
+        {/* Mobile score row */}
+        <div className="lg:hidden mt-5 px-7 flex justify-between font-mono text-xs text-[var(--hill-muted)] tracking-[0.04em]">
+          <div className="flex items-center gap-2">
+            <PieceShape player={1} size={16} skin="silver"/>
+            <span className="text-[var(--hill-text)] font-bold">9</span> · captured 3
+          </div>
+          <div className="flex items-center gap-2">
+            captured 4 · <span className="text-[var(--hill-text)] font-bold">8</span>
+            <PieceShape player={2} size={16} skin="gold"/>
+          </div>
+        </div>
+
+        {/* Desktop move history strip */}
+        <div className="hidden lg:flex justify-center mt-7">
+          <div className="inline-flex items-center gap-3 px-4 py-2.5 rounded-full bg-[var(--hill-surface)] border border-[var(--hill-border)] font-mono text-xs text-[var(--hill-muted)] tracking-[0.06em]">
+            <span className="text-[var(--hill-dim)]">MOVES</span>
+            <span className="w-px h-3.5 bg-[var(--hill-border)]"/>
+            {['1. c3-d4', 'd6-c5', '2. e3-f4', 'b6-a5', '3. f4×e5', '— ←'].map((m, i) => (
+              <span key={i} className={i === 5 ? 'text-[var(--hill-accent)] font-bold' : 'text-[var(--hill-text)] font-medium'}>{m}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile-only: ensure PlayerSlot is referenced once so tree-shaking keeps it; remove if not used. */}
+        <div className="hidden">
+          <PlayerSlot player={1} name="Aida" tier="Gold" skin="silver"/>
+          <ArenaBadge tier="Gold"/>
+        </div>
+      </div>
+    </>
+  );
+}
+
+interface SidePanelProps {
+  player: 1 | 2;
+  name: string;
+  tier: 'Bronze' | 'Silver' | 'Gold' | 'Master' | 'Champion';
+  skin: 'bronze' | 'silver' | 'gold' | 'master' | 'champion';
+  you?: boolean;
+  isActive?: boolean;
+  captured: number;
+  pieces: number;
+  alignment: 'left' | 'right';
+}
+
+function ClassicSidePanel({ player, name, tier, skin, you, isActive, captured, pieces, alignment }: SidePanelProps) {
+  return (
+    <div
+      className={[
+        'relative w-[240px] bg-[var(--hill-surface)] border-[1.5px] rounded-2xl p-5 flex flex-col gap-4',
+        isActive
+          ? 'border-[var(--hill-accent)] shadow-[0_0_28px_rgba(191,255,0,0.15)]'
+          : 'border-[var(--hill-border)]',
+      ].join(' ')}
     >
-      <h1 style={{ fontSize: 22, fontWeight: 700 }}>Classic 2P — Hot Seat</h1>
-
       <div
-        role="status"
-        style={{
-          fontSize: 18,
-          fontWeight: 600,
-          color: winners ? '#7dd3fc' : '#f5f5f5',
-        }}
-      >
-        {banner}
+        className={`absolute top-0 bottom-0 w-[3px] ${alignment === 'right' ? 'right-0' : 'left-0'}`}
+        style={{ background: player === 1 ? 'var(--hill-text)' : '#1A1A1A' }}
+      />
+      <div className="flex items-center gap-3.5">
+        <div className="w-[60px] h-[60px] rounded-xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-[var(--hill-border)] flex items-center justify-center">
+          <PieceShape player={player} size={42} skin={skin}/>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-base font-bold whitespace-nowrap">{name}</span>
+            {you && <span className="text-[9px] font-extrabold text-[var(--hill-accent)] tracking-[0.1em]">YOU</span>}
+          </div>
+          <div className="mt-1.5"><ArenaBadge tier={tier}/></div>
+        </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${n}, 56px)`,
-          gridTemplateRows: `repeat(${n}, 56px)`,
-          border: '4px solid #3a3a44',
-        }}
-      >
-        {Array.from({ length: n }).map((_, r) =>
-          Array.from({ length: n }).map((__, c) => {
-            const dark = (r + c) % 2 === 1;
-            const piece = state.board[r][c];
-            const target = !!moveTo(r, c);
-            return (
-              <div
-                key={`${r}-${c}`}
-                onClick={() => handleSquareClick(r, c)}
-                style={{
-                  width: 56,
-                  height: 56,
-                  background: dark ? '#5b4636' : '#d8c4a0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: dark ? 'pointer' : 'default',
-                  position: 'relative',
-                  outline: isSelected(r, c) ? '3px solid #fbbf24' : 'none',
-                  outlineOffset: '-3px',
-                }}
-              >
-                {target && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      background: 'rgba(125, 211, 252, 0.85)',
-                    }}
-                  />
-                )}
-                {piece && (
-                  <span
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '50%',
-                      background: piece.player === 1 ? '#e11d48' : '#1e1e24',
-                      border:
-                        piece.player === 1
-                          ? '2px solid #fb7185'
-                          : '2px solid #6b7280',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#fbbf24',
-                      fontSize: 20,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {piece.king ? '♔' : ''}
-                  </span>
-                )}
-              </div>
-            );
-          }),
-        )}
+      <div className="flex flex-col gap-1.5 px-3.5 py-3 bg-[var(--hill-surface2)] rounded-[10px] border border-[var(--hill-border)]">
+        <div className="flex justify-between items-center">
+          <span className="font-mono text-[10px] text-[var(--hill-muted)] tracking-[0.14em]">PIECES</span>
+          <span className="font-mono text-[22px] font-extrabold text-[var(--hill-text)]">{pieces}</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="font-mono text-[10px] text-[var(--hill-muted)] tracking-[0.14em]">CAPTURED</span>
+          <span className="font-mono text-base font-bold text-[var(--hill-accent)]">{captured}</span>
+        </div>
       </div>
 
-      <button
-        onClick={() => {
-          setState(createInitialState(classic2P));
-          setSelected(null);
-        }}
-        style={{
-          padding: '8px 18px',
-          borderRadius: 8,
-          border: '1px solid #4b5563',
-          background: '#2d2d36',
-          color: '#f5f5f5',
-          cursor: 'pointer',
-          fontSize: 14,
-        }}
-      >
-        New game
-      </button>
-    </main>
+      {isActive && (
+        <div className="text-center font-mono text-[10px] font-bold text-[var(--hill-accent)] tracking-[0.2em]">
+          ● ACTIVE TURN
+        </div>
+      )}
+    </div>
   );
 }

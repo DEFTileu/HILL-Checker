@@ -56,6 +56,38 @@
   to   { opacity: 1; }
 }
 
+/*
+ * Claude-Design export tokens. The flat components/* tree references colors
+ * via Tailwind arbitrary values like bg-[var(--hill-accent)], so the raw
+ * CSS variables must exist at :root (the v4 @theme above only generates
+ * `bg-hill-*` utility classes, not these var() names).
+ */
+:root {
+  --hill-bg: #0A0A0A;
+  --hill-surface: #141414;
+  --hill-surface2: #1A1A1A;
+  --hill-border: #1F1F1F;
+  --hill-borderHi: #2A2A2A;
+  --hill-text: #FAFAFA;
+  --hill-muted: #808080;
+  --hill-dim: #525252;
+  --hill-accent: #BFFF00;
+  --hill-accentDim: rgba(191, 255, 0, 0.12);
+  --hill-danger: #FF3B30;
+  --hill-bronze: #CD7F32;
+  --hill-silver: #C0C0C0;
+  --hill-gold: #FFD700;
+  --hill-master: #9B59B6;
+  --hill-champion: #BFFF00;
+}
+
+/* Scrollbar hide utility for horizontal skin-card row */
+.hill-scroll::-webkit-scrollbar { display: none; }
+.hill-scroll { scrollbar-width: none; }
+
+/* Display & mono helpers */
+.font-display { font-weight: 800; letter-spacing: -0.04em; line-height: 0.9; }
+
 html, body {
   height: 100%;
 }

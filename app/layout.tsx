@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/lib/auth';
+import { TopNav } from '@/components/TopNav';
+import { BottomNav } from '@/components/BottomNav';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -28,6 +30,9 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+// Hard-coded session for demo; swap for real auth in production.
+const DEMO_USER = { name: 'Aida K.', tier: 'Gold' as const, skin: 'gold' as const };
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -37,7 +42,16 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-hill-bg text-hill-text">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          {/* Desktop sticky header. Renders only on lg+ via `hidden lg:flex` inside. */}
+          <TopNav user={DEMO_USER} />
+          {/*
+            Bottom safe area for mobile so BottomNav doesn't sit on top of content.
+            On desktop the bottom nav is hidden so we zero out the padding via lg:.
+          */}
+          <main className="pb-[88px] lg:pb-0">{children}</main>
+          <BottomNav />
+        </AuthProvider>
       </body>
     </html>
   );
