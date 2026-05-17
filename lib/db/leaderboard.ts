@@ -40,21 +40,39 @@ export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   // Lazy import to avoid test environment issues
   const { getSupabase } = await import('@/lib/multiplayer/client');
 
-  const { data, error } = await getSupabase()
+  const sb = getSupabase();
+  const select = 'id, display_name, total_wins, total_games';
+  const toEntries = (rows: ProfileRow[]) =>
+    sortLeaderboard(
+      rows.map((r) => ({
+        id: r.id,
+        displayName: r.display_name,
+        totalWins: r.total_wins,
+        totalGames: r.total_games,
+      })),
+    );
+
+  // Normal case: only players who have actually played a game.
+  const { data, error } = await sb
     .from('profiles')
-    .select('id, display_name, total_wins, total_games')
+    .select(select)
     .gt('total_games', 0)
     .order('total_wins', { ascending: false })
     .limit(100);
-  if (error || !data) return [];
-  return sortLeaderboard(
-    (data as ProfileRow[]).map((r) => ({
-      id: r.id,
-      displayName: r.display_name,
-      totalWins: r.total_wins,
-      totalGames: r.total_games,
-    })),
-  );
+  if (error) return [];
+  if (data && data.length > 0) return toEntries(data as ProfileRow[]);
+
+  // Fallback (per explicit request): if NOBODY has played yet, don't show an
+  // empty board — list all registered users instead (0 wins / 0 games →
+  // Bronze, 0% win-rate). Once any real game is recorded, the filtered query
+  // above takes over again automatically.
+  const { data: all, error: allErr } = await sb
+    .from('profiles')
+    .select(select)
+    .order('total_wins', { ascending: false })
+    .limit(100);
+  if (allErr || !all) return [];
+  return toEntries(all as ProfileRow[]);
 }
 
 // Pure: entries are already sorted by the query; rank is 1-based input order.
