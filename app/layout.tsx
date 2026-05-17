@@ -18,9 +18,24 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000',
+  ),
   title: 'HILL — King of the Board',
   description:
-    'Blitz checkers with a unique 4-player King of the Hill mode. 4 players. 3 minutes.',
+    'Blitz checkers with a 4-player King of the Hill mode. 4 players. 3 minutes. One hill.',
+  openGraph: {
+    title: 'HILL — King of the Board',
+    description:
+      'Blitz checkers with a 4-player King of the Hill mode.',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'HILL — King of the Board',
+    description:
+      'Blitz checkers with a 4-player King of the Hill mode.',
+  },
 };
 
 export const viewport: Viewport = {
