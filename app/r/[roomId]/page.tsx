@@ -6,6 +6,7 @@ import { hillBlitz, hillSurvival } from '@/lib/engine/presets';
 import { applyMove, createInitialState } from '@/lib/engine/apply';
 import { getLegalMoves } from '@/lib/engine/rules';
 import { checkWinners } from '@/lib/engine/endgame';
+import { forfeitPlayer } from '@/lib/engine/forfeit';
 import type { Action, GameState, Player } from '@/lib/engine/types';
 import { useAuth } from '@/lib/auth';
 import {
@@ -22,6 +23,7 @@ import {
   broadcastSyncRequest,
   broadcastSyncResponse,
   broadcastModeChange,
+  broadcastForfeit,
   trackPresence,
 } from '@/lib/multiplayer/channel';
 import {
@@ -61,6 +63,14 @@ export default function RoomPage({
   // startedAtMs mirrors the startedAt ref for render-safe reads (elapsed timer display).
   const [startedAtMs, setStartedAtMs] = useState(0);
 
+  const [disconnectedAt, setDisconnectedAt] = useState<
+    Partial<Record<Player, number>>
+  >({});
+  const forfeitTimers = useRef<
+    Partial<Record<Player, ReturnType<typeof setTimeout>>>
+  >({});
+  const presenceRef = useRef<PresenceEntry[]>([]);
+
   const chRef = useRef<RealtimeChannel | null>(null);
   const stateRef = useRef<GameState | null>(null);
   const slotsRef = useRef<SlotMap>({});
@@ -84,12 +94,34 @@ export default function RoomPage({
 
   // Apply an engine action locally; mover also broadcasts.
   const applyAction = useCallback((action: Action, broadcast: boolean) => {
-    setState((prev) => {
-      if (!prev) return prev;
-      const next = applyMove(prev, action);
-      if (broadcast && chRef.current) broadcastMove(chRef.current, action);
-      return next;
+    setState((prev) => (prev ? applyMove(prev, action) : prev));
+    if (broadcast && chRef.current && stateRef.current) {
+      broadcastMove(chRef.current, action);
+    }
+  }, []);
+
+  // Apply a forfeit locally; host also broadcasts. Mirrors applyAction.
+  const applyForfeit = useCallback((player: Player, broadcast: boolean) => {
+    setState((prev) => (prev ? forfeitPlayer(prev, player) : prev));
+    if (
+      broadcast &&
+      isHostRef.current &&
+      chRef.current &&
+      stateRef.current
+    ) {
+      broadcastForfeit(chRef.current, player);
+    }
+    setDisconnectedAt((prev) => {
+      if (prev[player] == null) return prev;
+      const copy = { ...prev };
+      delete copy[player];
+      return copy;
     });
+    const t = forfeitTimers.current[player];
+    if (t) {
+      clearTimeout(t);
+      delete forfeitTimers.current[player];
+    }
   }, []);
 
   // Load room + subscribe.
@@ -114,8 +146,62 @@ export default function RoomPage({
         setStartedAtMs(ts);
       }
 
+      const slotOf = (userId: string): Player | null => {
+        const sl = slotsRef.current;
+        for (const key of Object.keys(sl) as unknown as Player[]) {
+          const p = Number(key) as Player;
+          if (sl[p]?.userId === userId) return p;
+        }
+        return null;
+      };
+
       const ch = subscribeToRoom(roomId, {
-        onPresenceSync: (e) => setPresence(e),
+        onPresenceSync: (e) => {
+          presenceRef.current = e;
+          setPresence(e);
+        },
+        onPresenceJoin: (userIds) => {
+          for (const uid of userIds) {
+            const p = slotOf(uid);
+            if (p == null) continue;
+            setDisconnectedAt((prev) => {
+              if (prev[p] == null) return prev;
+              const copy = { ...prev };
+              delete copy[p];
+              return copy;
+            });
+            const t = forfeitTimers.current[p];
+            if (t) {
+              clearTimeout(t);
+              delete forfeitTimers.current[p];
+            }
+          }
+        },
+        onPresenceLeave: (userIds) => {
+          for (const uid of userIds) {
+            const p = slotOf(uid);
+            if (p == null) continue;
+            if (!stateRef.current || checkWinners(stateRef.current)) continue;
+            setDisconnectedAt((prev) => ({ ...prev, [p]: Date.now() }));
+            if (!isHostRef.current) continue;
+            const existing = forfeitTimers.current[p];
+            if (existing) clearTimeout(existing);
+            forfeitTimers.current[p] = setTimeout(() => {
+              delete forfeitTimers.current[p];
+              const stillGone = !presenceRef.current.some(
+                (e) => e.userId === uid,
+              );
+              if (
+                stillGone &&
+                stateRef.current &&
+                !checkWinners(stateRef.current)
+              ) {
+                applyForfeit(p, true);
+              }
+            }, 10_000);
+          }
+        },
+        onForfeit: (p) => applyForfeit(p, false),
         onMove: (action) => applyAction(action, false),
         onGameStart: ({ state: s, slots: sl }) => {
           const ts = Date.now();
@@ -155,6 +241,11 @@ export default function RoomPage({
 
     return () => {
       active = false;
+      for (const key of Object.keys(forfeitTimers.current)) {
+        const tm = forfeitTimers.current[Number(key) as Player];
+        if (tm) clearTimeout(tm);
+      }
+      forfeitTimers.current = {};
       if (chRef.current) {
         chRef.current.unsubscribe();
         chRef.current = null;
@@ -299,6 +390,23 @@ export default function RoomPage({
           ROOM {roomId} · ROUND {state.round}
           {canMove ? ' · YOUR TURN' : ` · P${state.currentPlayer}`}
         </div>
+        {Object.keys(disconnectedAt)
+          .map((k) => Number(k) as Player)
+          .filter((p) => disconnectedAt[p] != null)
+          .map((p) => {
+            const secs = Math.max(
+              0,
+              Math.ceil((disconnectedAt[p]! + 10_000 - now) / 1000),
+            );
+            return (
+              <div
+                key={`dc-${p}`}
+                className="font-mono text-[11px] tracking-[0.16em] text-hill-danger"
+              >
+                P{p} DISCONNECTED · {secs}s…
+              </div>
+            );
+          })}
         <Board
           size={cfg.boardSize as 8 | 10}
           pieces={boardToPieces(state.board)}
