@@ -339,12 +339,13 @@ export default function RoomPage({
       if (!state || winners || !canMove) return;
       const m = moveTo(r, c);
       if (m) {
+        // Compute the post-move state synchronously so we know whether a
+        // chain jump remains. stateRef.current is still the pre-move state
+        // here (it syncs in useLayoutEffect, after this handler), so reading
+        // it would always see mandatoryJumpFrom=null and break multi-jump.
+        const next = applyMove(state, m);
         applyAction(m, true);
-        setSelected(
-          stateRef.current?.mandatoryJumpFrom
-            ? { row: r, col: c }
-            : null,
-        );
+        setSelected(next.mandatoryJumpFrom ?? null);
         return;
       }
       const piece = state.board[r][c];
