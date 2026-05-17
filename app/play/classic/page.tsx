@@ -95,6 +95,7 @@ export default function ClassicPage() {
   return (
     <GameView
       vm={vm}
+      mode="hot-seat"
       remaining={remaining}
       selected={selected ? [selected.row, selected.col] : null}
       legalTargets={legalMoves.map((m) => [m.to.row, m.to.col])}

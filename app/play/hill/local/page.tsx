@@ -98,6 +98,7 @@ function HillLocalInner() {
   return (
     <GameView
       vm={vm}
+      mode="hot-seat"
       remaining={remaining}
       selected={selected ? [selected.row, selected.col] as [number, number] : null}
       legalTargets={legalMoves.map((m) => [m.to.row, m.to.col] as [number, number])}

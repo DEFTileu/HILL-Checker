@@ -31,6 +31,12 @@ interface Props {
   /** Transient message slot (e.g. multiplayer disconnect countdown). */
   banner?: ReactNode;
   roomCode?: string;
+  /**
+   * 'hot-seat' = both players share one device, so no single side is "you" —
+   * the YOU label is suppressed (the ACTIVE TURN badge already tracks the
+   * current player). 'multiplayer' keeps YOU to identify the human's slot.
+   */
+  mode?: 'hot-seat' | 'multiplayer';
 }
 
 const clock = (s: number) =>
@@ -41,13 +47,14 @@ function toDesktopPanel(
   p: GameViewPlayer,
   remaining: number,
   secondsTotal: number,
+  hideYou: boolean,
 ): DesktopPanelPlayer {
   return {
     player: p.player,
     name: p.name,
     tier: p.tier,
     skin: p.skin,
-    you: p.isYou,
+    you: hideYou ? false : p.isYou,
     isActive: p.isActive,
     secondsLeft: p.isActive ? Math.max(0, remaining) : undefined,
     secondsTotal,
@@ -61,9 +68,11 @@ function toDesktopPanel(
 function SidePanel({
   p,
   alignment,
+  hideYou = false,
 }: {
   p: GameViewPlayer;
   alignment: 'left' | 'right';
+  hideYou?: boolean;
 }) {
   return (
     <div
@@ -86,7 +95,7 @@ function SidePanel({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-base font-bold whitespace-nowrap">{p.name}</span>
-            {p.isYou && (
+            {p.isYou && !hideYou && (
               <span className="text-[9px] font-extrabold text-[var(--hill-accent)] tracking-[0.1em]">
                 YOU
               </span>
@@ -136,7 +145,9 @@ export function GameView({
   gameOver = null,
   banner,
   roomCode,
+  mode = 'multiplayer',
 }: Props) {
+  const hideYou = mode === 'hot-seat';
   const is4P = vm.players.length > 2;
   const active = vm.players.find((p) => p.isActive) ?? vm.players[0];
   const modeLabel =
@@ -222,14 +233,14 @@ export function GameView({
               {leftRail.map((p) => (
                 <PlayerPanelDesktop
                   key={p.player}
-                  player={toDesktopPanel(p, remaining, secondsTotal)}
+                  player={toDesktopPanel(p, remaining, secondsTotal, hideYou)}
                   side="left"
                 />
               ))}
             </div>
           ) : (
             <div className="hidden lg:block">
-              <SidePanel p={vm.players[0]} alignment="right" />
+              <SidePanel p={vm.players[0]} alignment="right" hideYou={hideYou} />
             </div>
           )}
 
@@ -253,14 +264,14 @@ export function GameView({
               {rightRail.map((p) => (
                 <PlayerPanelDesktop
                   key={p.player}
-                  player={toDesktopPanel(p, remaining, secondsTotal)}
+                  player={toDesktopPanel(p, remaining, secondsTotal, hideYou)}
                   side="right"
                 />
               ))}
             </div>
           ) : (
             <div className="hidden lg:block">
-              <SidePanel p={vm.players[1]} alignment="left" />
+              <SidePanel p={vm.players[1]} alignment="left" hideYou={hideYou} />
             </div>
           )}
         </div>
@@ -276,7 +287,7 @@ export function GameView({
                   name={p.name}
                   tier={p.tier}
                   skin={p.skin}
-                  you={p.isYou}
+                  you={hideYou ? false : p.isYou}
                   isActive={p.isActive}
                   secondsLeft={p.isActive ? Math.max(0, remaining) : undefined}
                   secondsTotal={secondsTotal}
