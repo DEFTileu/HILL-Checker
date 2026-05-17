@@ -172,11 +172,13 @@ export function GameView({
       ? 33
       : 41;
 
-  // Corner split for the 4P desktop rails: first half flanks the board on
-  // the left, second half on the right (works for 3 or 4 players too).
-  const half = Math.ceil(vm.players.length / 2);
-  const leftRail = vm.players.slice(0, half);
-  const rightRail = vm.players.slice(half);
+  // 4P "King of the Hill" seats are corner-based: P1 (top-left) + P4
+  // (bottom-left) flank the board on the left; P2 (top-right) + P3
+  // (bottom-right) on the right — matching the board geometry from
+  // HILL_START. Filtering (not slicing) keeps this correct regardless of
+  // vm.players ordering, and degrades sanely for a 3-player game.
+  const leftRail = vm.players.filter((p) => p.player === 1 || p.player === 4);
+  const rightRail = vm.players.filter((p) => p.player === 2 || p.player === 3);
 
   return (
     <>
